@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31624.102
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhenomenologicalStudy.API", "PhenomenologicalStudy.API\PhenomenologicalStudy.API.csproj", "{4A8280C0-9C79-4ACC-AC8D-6DD8B599001C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhenomenologicalStudy.Web", "PhenomenologicalStudy.Web\PhenomenologicalStudy.Web.csproj", "{1356AADA-A283-463B-8854-1DEF20079F80}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4A8280C0-9C79-4ACC-AC8D-6DD8B599001C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A8280C0-9C79-4ACC-AC8D-6DD8B599001C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A8280C0-9C79-4ACC-AC8D-6DD8B599001C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A8280C0-9C79-4ACC-AC8D-6DD8B599001C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1356AADA-A283-463B-8854-1DEF20079F80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1356AADA-A283-463B-8854-1DEF20079F80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1356AADA-A283-463B-8854-1DEF20079F80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1356AADA-A283-463B-8854-1DEF20079F80}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DCA17323-B162-411E-A504-A83DA255CE6C}
+	EndGlobalSection
+EndGlobal
