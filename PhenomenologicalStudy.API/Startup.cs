@@ -72,7 +72,18 @@ namespace PhenomenologicalStudy.API
           };
         });
 
-      //
+      // Add token refresh
+      var tokenValidationParams = new TokenValidationParameters()
+      {
+        ValidateIssuerSigningKey = true,  // Validates 3rd part of JWT token (encrypted part) generated from secret in JwtConfig 
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        RequireExpirationTime = false,
+        ValidAudience = Configuration["JWT:ValidAudience"],
+        ValidIssuer = Configuration["JWT:ValidIssuer"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JwtConfig:Secret"]))  // Encrypts JWT tokens
+      };
 
       // Included with project scaffolding
       services.AddControllers();

@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Claims;
-using PhenomenologicalStudy.API.Models.Authentication.DataTransfer.Responses;
+using PhenomenologicalStudy.API.Models.Authentication.DataTransfer.Response;
 using PhenomenologicalStudy.API.Models;
 
 namespace PhenomenologicalStudy.API.Controllers
@@ -31,14 +31,14 @@ namespace PhenomenologicalStudy.API.Controllers
 
     [HttpPost]
     [Route("Register")]
-    public async Task<IActionResult> Register([FromBody] Models.Authentication.DataTransfer.Requests.Registration user)
+    public async Task<IActionResult> Register([FromBody] Models.Authentication.DataTransfer.Request.Register user)
     {
       if(ModelState.IsValid)
       {
         // Check email already registered
         if (await _userManager.FindByEmailAsync(user.Email) != null)
         {
-          return BadRequest(new Registration()
+          return BadRequest(new Register()
           {
             Errors = new List<string>() { "Email already in use" },
             Success = false
@@ -50,17 +50,17 @@ namespace PhenomenologicalStudy.API.Controllers
         IdentityResult result = await _userManager.CreateAsync(newUser, user.Password);
         if (!result.Succeeded)  // Registration failed
         {
-          return BadRequest(new Registration()
+          return BadRequest(new Register()
           {
             Errors = result.Errors.Select(x => x.Description).ToList(),
             Success = false
           });
         }
         else  // Authentication success
-          return Ok(new Registration() { Success = true, Token = GenerateJwtToken(newUser) });
+          return Ok(new Register() { Success = true, Token = GenerateJwtToken(newUser) });
       }
 
-      return BadRequest(new Registration()
+      return BadRequest(new Register()
       {
         Errors = new List<string>() { "Invalid payload" },
         Success = false
@@ -69,7 +69,7 @@ namespace PhenomenologicalStudy.API.Controllers
 
     [HttpPost]
     [Route("Login")]
-    public async Task<IActionResult> Login([FromBody] Models.Authentication.DataTransfer.Requests.Login user)
+    public async Task<IActionResult> Login([FromBody] Models.Authentication.DataTransfer.Request.Login user)
     {
       if (ModelState.IsValid)
       {
@@ -93,7 +93,7 @@ namespace PhenomenologicalStudy.API.Controllers
           });
         }
         else
-          return Ok(new Registration() { Success = true, Token = GenerateJwtToken(existingUser) });
+          return Ok(new Register() { Success = true, Token = GenerateJwtToken(existingUser) });
       }
 
       return BadRequest(new Login()
@@ -120,7 +120,7 @@ namespace PhenomenologicalStudy.API.Controllers
           new Claim(JwtRegisteredClaimNames.Sub, user.FirstName),
           new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Needed to use token refresh functionality supported by JWT
         }),
-        Expires = DateTime.UtcNow.AddHours(6),
+        Expires = DateTime.UtcNow.AddSeconds(30), // Only 30 seconds for demo purposes (use ~5-10 mins in production)
         SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
       };
 
