@@ -4,9 +4,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PhenomenologicalStudy.API.Models.Authentication.DataTransfer.Request
+namespace PhenomenologicalStudy.API.Models.Authentication.Request
 {
-  public class Register
+  public class RegisterRequest
   {
     [Required]
     public string FirstName { get; set; }

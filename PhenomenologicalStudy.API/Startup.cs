@@ -66,24 +66,24 @@ namespace PhenomenologicalStudy.API
             ValidateAudience = true,
             ValidateLifetime = true,
             RequireExpirationTime = false,
-            ValidAudience = Configuration["JWT:ValidAudience"],
-            ValidIssuer = Configuration["JWT:ValidIssuer"],
+            ValidAudience = Configuration["JwtConfig:ValidAudience"],
+            ValidIssuer = Configuration["JwtConfig:ValidIssuer"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JwtConfig:Secret"]))  // Encrypts JWT tokens
           };
         });
 
-      // Add token refresh
-      var tokenValidationParams = new TokenValidationParameters()
+      // Add JWT refresh service
+      services.AddSingleton(new TokenValidationParameters()
       {
         ValidateIssuerSigningKey = true,  // Validates 3rd part of JWT token (encrypted part) generated from secret in JwtConfig 
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
         RequireExpirationTime = false,
-        ValidAudience = Configuration["JWT:ValidAudience"],
-        ValidIssuer = Configuration["JWT:ValidIssuer"],
+        ValidAudience = Configuration["JwtConfig:ValidAudience"],
+        ValidIssuer = Configuration["JwtConfig:ValidIssuer"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JwtConfig:Secret"]))  // Encrypts JWT tokens
-      };
+      });
 
       // Included with project scaffolding
       services.AddControllers();

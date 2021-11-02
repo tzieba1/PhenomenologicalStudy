@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace PhenomenologicalStudy.API.Models.Authentication.DataTransfer.Request
+namespace PhenomenologicalStudy.API.Models.Authentication.Request
 {
-  public class Login
+  public class LoginRequest
   {
     [Required]
     [EmailAddress]

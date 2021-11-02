@@ -4,13 +4,12 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PhenomenologicalStudy.API.Models.Authentication.DataTransfer.Request
+namespace PhenomenologicalStudy.API.Models.Authentication
 {
-  public class JwtToken
+  public class Jwt
   {
     [Required]
     public string Token { get; set; }
-
     [Required]
     public string RefreshToken { get; set; }
   }
