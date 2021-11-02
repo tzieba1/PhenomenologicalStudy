@@ -27,13 +27,13 @@ namespace PhenomenologicalStudy.API.Controllers
     private readonly UserManager<User> _userManager;
     private readonly JwtConfiguration _jwtConfig;
     private readonly TokenValidationParameters _tokenValidationParams;
-    private readonly UserDbContext _userDbContext;
+    private readonly PSDbContext _userDbContext;
 
     public AuthenticationController(
       UserManager<User> userManager,
       IOptionsMonitor<JwtConfiguration> optionsMonitor,
       TokenValidationParameters tokenValidationParams,
-      UserDbContext userDbContext )
+      PSDbContext userDbContext )
     {
       _userManager = userManager;                     // Manages users for registration(creation)/login and validation
       _jwtConfig = optionsMonitor.CurrentValue;       // Inject appsettings.json into this controller
@@ -105,9 +105,9 @@ namespace PhenomenologicalStudy.API.Controllers
         // Check user exists
         if (existingUser == null)
         {
-          return BadRequest(new AuthenticationResult()
+          return NotFound(new AuthenticationResult()
           {
-            Errors = new List<string>() { "Invalid login request" },
+            Errors = new List<string>() { "User not found" },
             Success = false
           });
         }
@@ -255,7 +255,7 @@ namespace PhenomenologicalStudy.API.Controllers
           return new AuthenticationResult()
           {
             Success = false,
-            Errors = new List<string>() { "RefreshToken does not exist" }
+            Errors = new List<string>() { "Token does not exist" }
           };
         }
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PhenomenologicalStudy.API.Authentication
+namespace PhenomenologicalStudy.API.Models.Authentication
 {
   public class UserRoles
   {

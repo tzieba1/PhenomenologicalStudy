@@ -38,13 +38,13 @@ namespace PhenomenologicalStudy.API
       services.Configure<JwtConfiguration>(Configuration.GetSection("JwtConfig"));
 
       // Add SQL server with Entity Framework using DefaultConnection from appsettings.json
-      services.AddDbContext<UserDbContext>(options =>
+      services.AddDbContext<PSDbContext>(options =>
           options.UseSqlServer(
               Configuration.GetConnectionString("DefaultConnection")));
 
       // Add Identity
       services.AddIdentity<User, Role>(options => options.SignIn.RequireConfirmedAccount = true)
-                .AddEntityFrameworkStores<UserDbContext>()
+                .AddEntityFrameworkStores<PSDbContext>()
                 .AddDefaultTokenProviders();
 
       // Add Authentication (with JWT Bearer) 

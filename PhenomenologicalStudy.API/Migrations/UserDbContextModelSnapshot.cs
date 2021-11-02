@@ -8,7 +8,7 @@ using PhenomenologicalStudy.API.Data;
 
 namespace PhenomenologicalStudy.API.Migrations
 {
-    [DbContext(typeof(UserDbContext))]
+    [DbContext(typeof(PSDbContext))]
     partial class UserDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
@@ -120,7 +120,7 @@ namespace PhenomenologicalStudy.API.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Authentication.DataTransfer.RefreshToken", b =>
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Authentication.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -342,6 +342,9 @@ namespace PhenomenologicalStudy.API.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<DateTimeOffset?>("BirthDate")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
@@ -496,7 +499,7 @@ namespace PhenomenologicalStudy.API.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Authentication.DataTransfer.RefreshToken", b =>
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Authentication.RefreshToken", b =>
                 {
                     b.HasOne("PhenomenologicalStudy.API.Models.User", "User")
                         .WithMany()

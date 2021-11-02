@@ -16,6 +16,10 @@ namespace PhenomenologicalStudy.API.Models
     [Required(ErrorMessage = "Email address is required")]
     public override string Email { get; set; }
 
+    [Display(Name = "Date of Birth")]
+    [DataType(DataType.Date)]
+    public DateTimeOffset? BirthDate { get; set; }
+
     public int? ImageId { get; set; }
   }
 }

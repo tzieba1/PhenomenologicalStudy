@@ -9,7 +9,7 @@ using PhenomenologicalStudy.API.Data;
 
 namespace PhenomenologicalStudy.API.Migrations
 {
-    [DbContext(typeof(UserDbContext))]
+    [DbContext(typeof(PSDbContext))]
     [Migration("20211022044013_BaseUserModels")]
     partial class BaseUserModels
     {
