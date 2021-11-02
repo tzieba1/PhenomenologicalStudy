@@ -16,6 +16,8 @@ using PhenomenologicalStudy.API.Models.Authentication;
 using Microsoft.EntityFrameworkCore;
 using PhenomenologicalStudy.API.Models.Authentication.Response;
 using PhenomenologicalStudy.API.Models.Authentication.Request;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace PhenomenologicalStudy.API.Controllers
 {
@@ -38,15 +40,7 @@ namespace PhenomenologicalStudy.API.Controllers
       _userManager = userManager;                     // Manages users for registration(creation)/login and validation
       _jwtConfig = optionsMonitor.CurrentValue;       // Inject appsettings.json into this controller
       _userDbContext = userDbContext;                 // Needed to handle RefreshTokens on the database
-      _tokenValidationParams = tokenValidationParams; // For refreshing JWTs
-
-      // Validate issuer signing key, issuer, and audience from JwtConfiguration object linked to appsettings.json
-      _tokenValidationParams.ValidateAudience = true;
-      _tokenValidationParams.ValidateIssuer = true;
-      _tokenValidationParams.ValidateIssuerSigningKey = true;
-      _tokenValidationParams.ValidIssuer = _jwtConfig.ValidIssuer;
-      _tokenValidationParams.ValidAudience = _jwtConfig.ValidAudience;
-      _tokenValidationParams.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.Secret));
+      _tokenValidationParams = tokenValidationParams; // For generating and validating JWTs
     }
 
     /// <summary>
