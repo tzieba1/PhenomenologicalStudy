@@ -8,7 +8,7 @@ using PhenomenologicalStudy.API.Data;
 
 namespace PhenomenologicalStudy.API.Migrations
 {
-    [DbContext(typeof(PSDbContext))]
+    [DbContext(typeof(PhenomenologicalStudyContext))]
     partial class UserDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

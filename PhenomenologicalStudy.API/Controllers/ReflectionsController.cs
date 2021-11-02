@@ -17,9 +17,9 @@ namespace PhenomenologicalStudy.API.Controllers
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // Add header "Authorization": "Bearer {jwt}" where jwt from login.
     public class ReflectionsController : ControllerBase
     {
-        private readonly PSDbContext _context;
+        private readonly PhenomenologicalStudyContext _context;
 
-        public ReflectionsController(PSDbContext context)
+        public ReflectionsController(PhenomenologicalStudyContext context)
         {
             _context = context;
         }

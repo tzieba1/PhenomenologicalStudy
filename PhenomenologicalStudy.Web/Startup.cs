@@ -28,12 +28,12 @@ namespace PhenomenologicalStudy.Web
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
-      services.AddDbContext<PSDbContext>(options =>
+      services.AddDbContext<PhenomenologicalStudyContext>(options =>
           options.UseSqlServer(
               Configuration.GetConnectionString("DefaultConnection")));
       services.AddDatabaseDeveloperPageExceptionFilter();
       services.AddIdentity<User, Role>(options => options.SignIn.RequireConfirmedAccount = true)
-          .AddEntityFrameworkStores<PSDbContext>()
+          .AddEntityFrameworkStores<PhenomenologicalStudyContext>()
           .AddDefaultUI()
           .AddDefaultTokenProviders();
       services.AddRazorPages();

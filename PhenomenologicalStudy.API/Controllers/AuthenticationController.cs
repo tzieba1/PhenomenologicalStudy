@@ -27,24 +27,26 @@ namespace PhenomenologicalStudy.API.Controllers
     private readonly UserManager<User> _userManager;
     private readonly JwtConfiguration _jwtConfig;
     private readonly TokenValidationParameters _tokenValidationParams;
-    private readonly PSDbContext _userDbContext;
+    private readonly PhenomenologicalStudyContext _userDbContext;
 
     public AuthenticationController(
       UserManager<User> userManager,
       IOptionsMonitor<JwtConfiguration> optionsMonitor,
       TokenValidationParameters tokenValidationParams,
-      PSDbContext userDbContext )
+      PhenomenologicalStudyContext userDbContext)
     {
       _userManager = userManager;                     // Manages users for registration(creation)/login and validation
       _jwtConfig = optionsMonitor.CurrentValue;       // Inject appsettings.json into this controller
       _userDbContext = userDbContext;                 // Needed to handle RefreshTokens on the database
       _tokenValidationParams = tokenValidationParams; // For refreshing JWTs
 
-      // Validate issuer and audience from JwtConfiguration object linked to appsettings.json
+      // Validate issuer signing key, issuer, and audience from JwtConfiguration object linked to appsettings.json
       _tokenValidationParams.ValidateAudience = true;
       _tokenValidationParams.ValidateIssuer = true;
-      _tokenValidationParams.ValidIssuer = _jwtConfig.ValidIssuer;  
+      _tokenValidationParams.ValidateIssuerSigningKey = true;
+      _tokenValidationParams.ValidIssuer = _jwtConfig.ValidIssuer;
       _tokenValidationParams.ValidAudience = _jwtConfig.ValidAudience;
+      _tokenValidationParams.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtConfig.Secret));
     }
 
     /// <summary>
@@ -181,7 +183,10 @@ namespace PhenomenologicalStudy.API.Controllers
           new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Enables JWT refresh token functionality
         }),
         Expires = DateTime.UtcNow.AddSeconds(30), // Only 30 seconds for demo purposes (use ~5-10 mins in production)
-        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
+        SigningCredentials = new SigningCredentials(
+          _tokenValidationParams.IssuerSigningKey,
+          SecurityAlgorithms.HmacSha256Signature
+        ),
         Audience = _jwtConfig.ValidAudience,
         Issuer = _jwtConfig.ValidIssuer
       };

@@ -6,9 +6,9 @@ using PhenomenologicalStudy.API.Models.Authentication;
 
 namespace PhenomenologicalStudy.API.Data
 {
-  public class PSDbContext : IdentityDbContext<User, Role, Guid>
+  public class PhenomenologicalStudyContext : IdentityDbContext<User, Role, Guid>
   {
-    public PSDbContext(DbContextOptions<PSDbContext> options) : base(options) { }
+    public PhenomenologicalStudyContext(DbContextOptions<PhenomenologicalStudyContext> options) : base(options) { }
 
     public virtual DbSet<Reflection> Reflections { get; set; }
     public virtual DbSet<Child> Children { get; set; }

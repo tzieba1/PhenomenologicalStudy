@@ -9,7 +9,7 @@ using PhenomenologicalStudy.API.Data;
 
 namespace PhenomenologicalStudy.API.Migrations
 {
-    [DbContext(typeof(PSDbContext))]
+    [DbContext(typeof(PhenomenologicalStudyContext))]
     [Migration("20211022222129_AddRefreshToken")]
     partial class AddRefreshToken
     {
