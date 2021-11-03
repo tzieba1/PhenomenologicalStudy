@@ -6,7 +6,7 @@ using PhenomenologicalStudy.API.Models.Authentication;
 
 namespace PhenomenologicalStudy.API.Data
 {
-  public class PhenomenologicalStudyContext : IdentityDbContext<User, Role, Guid>
+  public class PhenomenologicalStudyContext : IdentityDbContext<User, Role, Guid>, IPhenomenologicalStudyContext
   {
     public PhenomenologicalStudyContext(DbContextOptions<PhenomenologicalStudyContext> options) : base(options) { }
 
@@ -19,7 +19,9 @@ namespace PhenomenologicalStudy.API.Data
     public virtual DbSet<UserChild> UserChildren { get; set; }
     public virtual DbSet<ChildEmotion> ChildEmotions { get; set; }
     public virtual DbSet<Permission> Permissions { get; set; }
+    public virtual DbSet<Permission> UserPermissions { get; set; }
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; }
+    public virtual DbSet<ErrorMessage> ErrorMessages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

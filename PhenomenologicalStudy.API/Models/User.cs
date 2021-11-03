@@ -1,6 +1,10 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using PhenomenologicalStudy.API.Models.Authentication;
+using PhenomenologicalStudy.API.Models.ManyToMany;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PhenomenologicalStudy.API.Models
 {
@@ -20,6 +24,14 @@ namespace PhenomenologicalStudy.API.Models
     [DataType(DataType.Date)]
     public DateTimeOffset? BirthDate { get; set; }
 
-    public int? ImageId { get; set; }
+    public byte[] ProfilePicture { get; set; }
+
+    public ICollection<UserChild> UserChildren { get; set; }
+
+    public ICollection<UserReflection> UserReflections { get; set; }
+
+    public ICollection<UserPermission> UserPermissions { get; set; }
+
+    public ICollection<RefreshToken> RefreshTokens { get; set; }
   }
 }

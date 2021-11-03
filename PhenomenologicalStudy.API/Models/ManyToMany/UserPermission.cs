@@ -5,9 +5,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PhenomenologicalStudy.API.Models
+namespace PhenomenologicalStudy.API.Models.ManyToMany
 {
-  public class UserReflection
+  public class UserPermission
   {
     [Key]
     [Required]
@@ -17,12 +17,12 @@ namespace PhenomenologicalStudy.API.Models
     public Guid UserId { get; set; }
 
     [Required]
-    public Guid ReflectionId { get; set; }
+    public Guid PermissionId { get; set; }
 
     [ForeignKey(nameof(UserId))]
     public User User { get; set; }
 
-    [ForeignKey(nameof(ReflectionId))]
-    public Reflection Reflection { get; set; }
+    [ForeignKey(nameof(PermissionId))]
+    public Permission Permission { get; set; }
   }
 }

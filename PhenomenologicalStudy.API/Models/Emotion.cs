@@ -8,6 +8,7 @@ namespace PhenomenologicalStudy.API.Models
 {
   public class Emotion
   {
+    [Key]
     [Required]
     public Guid Id { get; set; }
 
@@ -15,5 +16,7 @@ namespace PhenomenologicalStudy.API.Models
     public string Name { get; set; }
     
     public int? Intensity { get; set; }
+
+    public ICollection<ChildEmotion> ChildEmotions { get; set; }
   }
 }

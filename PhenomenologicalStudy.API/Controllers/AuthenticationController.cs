@@ -16,8 +16,6 @@ using PhenomenologicalStudy.API.Models.Authentication;
 using Microsoft.EntityFrameworkCore;
 using PhenomenologicalStudy.API.Models.Authentication.Response;
 using PhenomenologicalStudy.API.Models.Authentication.Request;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace PhenomenologicalStudy.API.Controllers
 {

@@ -34,6 +34,15 @@ namespace PhenomenologicalStudy.API
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
+      // Needed to create DbContext interface as dependency injectable service for adding/saving to database within middleware invokation.
+      services.AddScoped<IPhenomenologicalStudyContext, PhenomenologicalStudyContext>();
+
+      // Disable the default behaviour where invalid model state is automatically thrown because it is handled with middleware
+      services.Configure<ApiBehaviorOptions>(options =>
+      {
+        options.SuppressModelStateInvalidFilter = true;
+      });
+
       // Add JWT from 'JwtConfig' section of appsettings.json (make secrets available to the application)
       services.Configure<JwtConfiguration>(Configuration.GetSection("JwtConfig"));
 
@@ -47,6 +56,19 @@ namespace PhenomenologicalStudy.API
                 .AddEntityFrameworkStores<PhenomenologicalStudyContext>()
                 .AddDefaultTokenProviders();
 
+      // Instantiate JWT validation parameters here to ensure single issuer signing key for token validation
+      TokenValidationParameters tokenValidationParams = new()
+      {
+        ValidateIssuerSigningKey = true,  // Validates 3rd part of JWT token (encrypted part) generated from secret in JwtConfig 
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        RequireExpirationTime = false,
+        ValidAudience = Configuration["JwtConfig:ValidAudience"],
+        ValidIssuer = Configuration["JwtConfig:ValidIssuer"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JwtConfig:Secret"]))  // Encrypts JWT tokens
+      };
+
       // Add Authentication (with JWT Bearer) 
       services.AddAuthentication(options =>
       {
@@ -57,33 +79,21 @@ namespace PhenomenologicalStudy.API
         // Add JWT Bearer using AuthenticationBuilder returned from AddAuthentication()
         .AddJwtBearer(options =>
         {
+          options.Events = new JwtBearerEvents
+          {
+            OnTokenValidated = context =>
+            {
+              //TODO: Add claims here
+              return Task.CompletedTask;
+            }
+          };
           options.SaveToken = true;
           options.RequireHttpsMetadata = false;
-          options.TokenValidationParameters = new TokenValidationParameters()
-          {
-            ValidateIssuerSigningKey = true,  // Validates 3rd part of JWT token (encrypted part) generated from secret in JwtConfig 
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            RequireExpirationTime = false,
-            ValidAudience = Configuration["JwtConfig:ValidAudience"],
-            ValidIssuer = Configuration["JwtConfig:ValidIssuer"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JwtConfig:Secret"]))  // Encrypts JWT tokens
-          };
+          options.TokenValidationParameters = tokenValidationParams;
         });
 
       // Add JWT refresh service
-      services.AddSingleton(new TokenValidationParameters()
-      {
-        ValidateIssuerSigningKey = true,  // Validates 3rd part of JWT token (encrypted part) generated from secret in JwtConfig 
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        RequireExpirationTime = false,
-        ValidAudience = Configuration["JwtConfig:ValidAudience"],
-        ValidIssuer = Configuration["JwtConfig:ValidIssuer"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JwtConfig:Secret"]))  // Encrypts JWT tokens
-      });
+      services.AddSingleton(tokenValidationParams);
 
       // Included with project scaffolding
       services.AddControllers();
@@ -109,6 +119,9 @@ namespace PhenomenologicalStudy.API
 
       app.UseAuthentication();
       app.UseAuthorization();
+
+      // Add custom middleware which checks accept headers and errors
+      app.UseMiddleware<ErrorMessageMiddleware>();
 
       app.UseEndpoints(endpoints =>
       {
