@@ -10,6 +10,7 @@ namespace PhenomenologicalStudy.API.Configuration
   /// </summary>
   public class Secrets
   {
-    public string AdminPassword { get; set; }
+    public string DemoAdminPassword { get; set; }
+    public string DemoParticipantPassword { get; set; }
   }
 }

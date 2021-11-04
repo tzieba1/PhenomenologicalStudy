@@ -16,14 +16,7 @@ namespace PhenomenologicalStudy.API.Models
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; }
 
-    [Required]
-    public Guid ChildEmotionId { get; set; }
-
-    [Required]
-    public Guid ImageId { get; set; }
-        
-    [Required]
-    public Guid CommentId { get; set; }
+    public User Users { get; set; }
 
     [NotMapped]
     [JsonIgnore]
@@ -52,16 +45,5 @@ namespace PhenomenologicalStudy.API.Models
     [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTimeOffset UpdatedTime { get; set; }
-
-    // --- FOREIGN KEYS --- //
-    [ForeignKey(nameof(ChildEmotionId))]
-    public ChildEmotion ChildEmotion { get; set; }
-
-    [ForeignKey(nameof(ImageId))]
-    public Image Image { get; set; }
-
-    [ForeignKey(nameof(CommentId))]
-    public Comment Comment { get; set; }
-
   }
 }

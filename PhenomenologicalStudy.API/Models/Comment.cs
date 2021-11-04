@@ -14,6 +14,12 @@ namespace PhenomenologicalStudy.API.Models
     public Guid Id { get; set; }
 
     [Required]
+    public Guid ReflectionID { get; set; }
+
+    [ForeignKey(nameof(ReflectionID))]
+    public Reflection Reflection { get; set; }
+
+    [Required]
     public string Text { get; set; }
 
     [NotMapped]
@@ -43,7 +49,5 @@ namespace PhenomenologicalStudy.API.Models
     [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTimeOffset UpdatedTime { get; set; }
-
-    public ICollection<Reflection> Reflections { get; set; }
   }
 }

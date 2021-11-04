@@ -16,7 +16,5 @@ namespace PhenomenologicalStudy.API.Models
     public string Name { get; set; }
     
     public int? Intensity { get; set; }
-
-    public ICollection<ChildEmotion> ChildEmotions { get; set; }
   }
 }

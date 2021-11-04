@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -11,6 +12,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using PhenomenologicalStudy.API.Authorization.Handlers;
+using PhenomenologicalStudy.API.Authorization.Requirements;
 using PhenomenologicalStudy.API.Configuration;
 using PhenomenologicalStudy.API.Data;
 using PhenomenologicalStudy.API.Models;
@@ -34,6 +37,22 @@ namespace PhenomenologicalStudy.API
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
+      // Needed to access secrets from Azure Key Vault
+      services.AddSingleton(Configuration);
+
+      // Authorization policies added using custom requirements from PhenomenologicalStudy.API.Authorization.Requirements namespace
+      services.AddAuthorization(OptionsBuilderConfigurationExtensions =>
+      {
+        OptionsBuilderConfigurationExtensions.AddPolicy("ExamplePermissionPolicy", p => 
+          { 
+            p.RequireRole("Admin");
+            p.Requirements.Add(new ExamplePermissionRequirement("grant"));
+          });
+      });
+
+      // Needed to handle authorization requirements added to authorization policies above
+      services.AddSingleton<IAuthorizationHandler, ExamplePermissionRequirementHandler>();
+
       // Needed to create DbContext interface as dependency injectable service for adding/saving to database within middleware invokation.
       services.AddScoped<IPhenomenologicalStudyContext, PhenomenologicalStudyContext>();
 
@@ -111,6 +130,10 @@ namespace PhenomenologicalStudy.API
         app.UseDeveloperExceptionPage();
         app.UseSwagger();
         app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "PhenomenologicalStudy.API v1"));
+      }
+      else
+      {
+        app.UseHsts();
       }
 
       app.UseHttpsRedirection();

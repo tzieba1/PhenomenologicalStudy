@@ -18,8 +18,7 @@ namespace PhenomenologicalStudy.API
     /// </summary>
     public class ErrorMessageMiddleware
     {
-        // The request delegate
-        private readonly RequestDelegate _next;
+        private readonly RequestDelegate _next; // Delegates execution to next middleware/endpoint in HttpContext pipeline
 
         /// <summary>
         /// Constructor for middleware that caches the request delegate
@@ -31,7 +30,8 @@ namespace PhenomenologicalStudy.API
         }
 
         /// <summary>
-        /// Method called when middleware is invoked in the pipeline. Responsible for checking if the accept header and content type is application/xml or application/json and serializing the response accordingly.
+        /// Method called when middleware is invoked in the pipeline.
+        /// Responsible for checking if the accept header and content type is application/xml or application/json and serializing the response accordingly.
         /// </summary>
         /// <param name="context">HTTP request information</param>
         /// <returns>Void Async Task</returns>
@@ -118,11 +118,11 @@ namespace PhenomenologicalStudy.API
                 // Needed to check for Accept-Header value
                 if (request.Headers.ContainsKey("Accept"))  // Check for Accept-Header key in header
                 {
-                    bool check = request.Headers.TryGetValue("Accept", out StringValues acceptHeader);
+                    request.Headers.TryGetValue("Accept", out StringValues acceptHeader);
                     if (acceptHeader == "application/xml")       // Check for XML serialize. 
                     {
-                        using MemoryStream stream = new MemoryStream();
-                        XmlSerializer serializer = new XmlSerializer(typeof(ErrorMessage));
+                        using MemoryStream stream = new();
+                        XmlSerializer serializer = new(typeof(ErrorMessage));
                         serializer.Serialize(stream, errorMessage);
                         await context.Response.WriteAsync(Encoding.UTF8.GetString(stream.ToArray()));
                     }

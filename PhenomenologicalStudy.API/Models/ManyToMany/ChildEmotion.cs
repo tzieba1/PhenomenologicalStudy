@@ -13,13 +13,23 @@ namespace PhenomenologicalStudy.API.Models
   {
     [Key]
     [Required]
-    public Guid Id { get; set; }
-
-    [Required]
     public Guid ChildId { get; set; }
 
+    [ForeignKey(nameof(ChildId))]
+    public Child Child { get; set; }
+
+    [Key]
     [Required]
     public Guid EmotionId { get; set; }
+
+    [ForeignKey(nameof(EmotionId))]
+    public Emotion Emotion { get; set; }
+
+    [Required]
+    public Guid ReflectionId { get; set; }
+
+    [ForeignKey(nameof(ReflectionId))]
+    public Reflection Reflection { get; set; }
 
     [NotMapped]
     [JsonIgnore]
@@ -48,14 +58,5 @@ namespace PhenomenologicalStudy.API.Models
     [Required]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTimeOffset UpdatedTime { get; set; }
-
-    // Foreign keys establish one-to-many relationship 
-    [ForeignKey(nameof(ChildId))]
-    public Child Child { get; set; }
-
-    [ForeignKey(nameof(EmotionId))]
-    public Emotion Emotion { get; set; }
-
-    public ICollection<Reflection> Reflections { get; set; }
   }
 }

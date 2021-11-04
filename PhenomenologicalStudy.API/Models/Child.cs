@@ -23,8 +23,8 @@ namespace PhenomenologicalStudy.API.Models
     [Required]
     public char Gender { get; set; }
 
-    public ICollection<UserChild> UserChildren { get; set; }
+    public User Users { get; set; }
 
-    public ICollection<ChildEmotion> ChildEmotions { get; set; }
+    public virtual ICollection<Emotion> Emotions { get; set; }
   }
 }

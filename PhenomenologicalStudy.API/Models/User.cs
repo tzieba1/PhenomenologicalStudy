@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using PhenomenologicalStudy.API.Models.Authentication;
-using PhenomenologicalStudy.API.Models.ManyToMany;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -26,11 +25,9 @@ namespace PhenomenologicalStudy.API.Models
 
     public byte[] ProfilePicture { get; set; }
 
-    public ICollection<UserChild> UserChildren { get; set; }
+    public ICollection<Child> Children { get; set; }
 
-    public ICollection<UserReflection> UserReflections { get; set; }
-
-    public ICollection<UserPermission> UserPermissions { get; set; }
+    public ICollection<Reflection> Reflections { get; set; }
 
     public ICollection<RefreshToken> RefreshTokens { get; set; }
   }

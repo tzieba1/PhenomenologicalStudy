@@ -9,7 +9,7 @@ namespace PhenomenologicalStudy.API.Models.Authentication
 {
   public class RefreshToken
   {
-    [KeyAttribute]
+    [Key]
     public Guid Id { get; set; }
     
     public Guid UserId { get; set; }
