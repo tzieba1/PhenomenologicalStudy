@@ -13,6 +13,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using PhenomenologicalStudy.API.Services;
 
 namespace PhenomenologicalStudy.Web
 {
@@ -28,6 +30,10 @@ namespace PhenomenologicalStudy.Web
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
+      // Needed to set up email sender service
+      services.AddTransient<IEmailSender, EmailSender>();
+      services.Configure<EmailSenderOptions>(Configuration.GetSection("EmailSenderOptions"));
+
       services.AddDbContext<PhenomenologicalStudyContext>(options =>
           options.UseSqlServer(
               Configuration.GetConnectionString("DefaultConnection")));

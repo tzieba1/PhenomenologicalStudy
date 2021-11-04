@@ -42,7 +42,7 @@ namespace PhenomenologicalStudy.API
     {
       // Needed to set up email sender service
       services.AddTransient<IEmailSender, EmailSender>();
-      services.Configure<EmailSenderOptions>(Configuration.GetSection("SendGridCredentials"));
+      services.Configure<EmailSenderOptions>(Configuration.GetSection("EmailSenderOptions"));
 
       // Needed to access secrets from Azure Key Vault
       services.AddSingleton(Configuration);

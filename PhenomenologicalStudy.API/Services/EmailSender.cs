@@ -28,7 +28,7 @@ namespace PhenomenologicalStudy.API.Services
       var client = new SendGridClient(apiKey);
       var msg = new SendGridMessage()
       {
-        From = new EmailAddress("Joe@contoso.com", "Joe Smith"),
+        From = new EmailAddress("tzieba@protonmail.com", "Tommy Zieba"),
         Subject = subject,
         PlainTextContent = message,
         HtmlContent = message

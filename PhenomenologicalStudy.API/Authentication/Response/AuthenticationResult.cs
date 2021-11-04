@@ -13,6 +13,8 @@ namespace PhenomenologicalStudy.API.Authentication.Response
     public bool Success { get; set; }
     public List<string> Errors { get; set; }
 
+    public List<string> StatusMessages { get; set; }
+
     public AuthenticationResult() { }
 
     public AuthenticationResult(Jwt jwtToken, bool success)

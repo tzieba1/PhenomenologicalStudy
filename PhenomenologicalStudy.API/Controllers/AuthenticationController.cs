@@ -17,6 +17,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Hosting;
 using PhenomenologicalStudy.API.Authentication.Request;
 using PhenomenologicalStudy.API.Authentication.Response;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authorization;
 
 namespace PhenomenologicalStudy.API.Controllers
 {
@@ -29,25 +34,32 @@ namespace PhenomenologicalStudy.API.Controllers
     private readonly JwtConfiguration _jwtConfig;
     private readonly TokenValidationParameters _tokenValidationParams;
     private readonly PhenomenologicalStudyContext _userDbContext;
+    private readonly ILogger<AuthenticationController> _logger;
+    private readonly IEmailSender _emailSender;
 
     public AuthenticationController(
       UserManager<User> userManager,
       IConfiguration config,
       TokenValidationParameters tokenValidationParams,
-      PhenomenologicalStudyContext userDbContext)
+      PhenomenologicalStudyContext userDbContext,
+      ILogger<AuthenticationController> logger,
+      IEmailSender emailSender)
     {
       _userManager = userManager;                                           // Manages users for registration(creation)/login and validation
       _jwtConfig = config.GetSection("JwtConfig").Get<JwtConfiguration>();  // Inject secret JWT configuration into this controller
       _userDbContext = userDbContext;                                       // Needed to handle RefreshTokens on the database
       _tokenValidationParams = tokenValidationParams;                       // For generating and validating JWTs
+      _logger = logger;                                                     // Generate logs for this controller
+      _emailSender = emailSender;                                           // For registration confirmation emails
     }
 
     /// <summary>
-    /// Endpoint for user to register and recieve JWT including both token and refresh token properties.
+    /// Endpoint for user to register and recieve an email confirmation link.
     /// </summary>
     /// <param name="user">Candidate user being registered</param>
-    /// <returns>AuthenticationResult with new Jwt when successful, otherwise BadRequest</returns>
+    /// <returns>AuthenticationResult with status of email confirmation, otherwise BadRequest</returns>
     [HttpPost]
+    [AllowAnonymous]
     [Route("Register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest user)
     {
@@ -64,7 +76,12 @@ namespace PhenomenologicalStudy.API.Controllers
         }
 
         // Await registration and check for success
-        User newUser = new() { Email = user.Email, UserName = user.Email, FirstName = user.FirstName, LastName = user.LastName };
+        User newUser = new() { 
+          Email = user.Email, 
+          UserName = user.Email, 
+          FirstName = user.FirstName, 
+          LastName = user.LastName 
+        };
         IdentityResult result = await _userManager.CreateAsync(newUser, user.Password);
         if (!result.Succeeded)  // Registration failed
         {
@@ -74,8 +91,41 @@ namespace PhenomenologicalStudy.API.Controllers
             Success = false
           });
         }
-        else  // Authentication success
-          return Ok(new AuthenticationResult(await GenerateJwt(newUser), true)); // Use base JwtToken to construct Register response
+        else  // Send confirmation email
+        {
+          User createdUser = await _userManager.FindByEmailAsync(newUser.Email); // Retrieve the created user to get their Id
+          _logger.LogInformation("User created a new account with password.");
+
+          // Generate a confirmation token to securely confirm an email address for a successfully registered user
+          string code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
+          code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+          // Send callback for route in this controller to ConfirmEmail
+          //string callbackUrl = Url.Action("ConfirmEmail", "Authentication", new { userId = createdUser.Id.ToString(), code = code });
+          var urlBuilder = new UriBuilder() { 
+            Scheme = "https",
+            Host = "localhost",
+            Port = 5001,
+            Path = "/api/Authentication/ConfirmEmail",
+            Query = $"?userId={createdUser.Id}&code={code}"
+          };
+
+          await _emailSender.SendEmailAsync(newUser.Email, "Confirm your email",
+              $"Please confirm your account by <a href='{urlBuilder}'>clicking here</a>.");
+
+          if (_userManager.Options.SignIn.RequireConfirmedAccount)
+          {
+            return Ok(
+              new AuthenticationResult()
+              {
+                StatusMessages = new List<string>() { "Confirmation email sent (check spam folder)." },
+                Success = true
+              }
+            );
+          }
+          else
+            return Ok();
+        }
       }
 
       return BadRequest(new AuthenticationResult()
@@ -86,11 +136,49 @@ namespace PhenomenologicalStudy.API.Controllers
     }
 
     /// <summary>
+    /// Endpoint for user to confirm their email (only reachable by link sent to registerating email with security token attached).
+    /// </summary>
+    /// <param name="userId">Guid of user whos email is being confirmed</param>
+    /// <param name="code">Security token generated by _userManager</param>
+    /// <returns></returns>
+    [HttpGet]
+    [AllowAnonymous]
+    [Route("ConfirmEmail")]
+    public async Task<IActionResult> ConfirmEmail([FromQuery]string userId, [FromQuery] string code)
+    {
+      //string userId = confirmation.UserId;
+      //string code = confirmation.Code;
+      if (userId == null || code == null)
+      {
+        return BadRequest(new AuthenticationResult()
+        {
+          Errors = new List<string>() { "Ivalid email confirmation request." },
+          Success = false
+        });
+      }
+
+      var user = await _userManager.FindByIdAsync(userId);
+      if (user == null)
+      {
+        return NotFound($"Unable to load user with ID '{userId}'.");
+      }
+
+      code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+      var result = await _userManager.ConfirmEmailAsync(user, code);
+      var statusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
+
+      var confirmResult = new AuthenticationResult(await GenerateJwt(user), true);
+      confirmResult.StatusMessages = new List<string>() { statusMessage };
+      return Ok(confirmResult);
+    }
+
+    /// <summary>
     /// Endpoint for user to login and recieve JWT including both token and refresh token properties.
     /// </summary>
-    /// <param name="user"></param>
+    /// <param name="user">Login request POCO representing user credentials</param>
     /// <returns></returns>
     [HttpPost]
+    [AllowAnonymous]
     [Route("Login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest user)
     {
@@ -106,6 +194,17 @@ namespace PhenomenologicalStudy.API.Controllers
             Success = false
           });
         }
+
+        // Check user has not confirmed their email
+        if (!existingUser.EmailConfirmed)
+        {
+          return NotFound(new AuthenticationResult()
+          {
+            Errors = new List<string>() { "Email has not been confirmed." },
+            Success = false
+          });
+        }
+
         // Check password matches after hash/salt/encryption
         if (!(await _userManager.CheckPasswordAsync(existingUser, user.Password)))
         {
@@ -132,6 +231,7 @@ namespace PhenomenologicalStudy.API.Controllers
     /// <param name="token"></param>
     /// <returns>BadRequest if Jwt canot be refreshed, otherwise refreshed Jwt</returns>
     [HttpPost]
+    [AllowAnonymous]
     [Route("RefreshToken")]
     public async Task<IActionResult> RefreshToken([FromBody] Jwt token)
     {
