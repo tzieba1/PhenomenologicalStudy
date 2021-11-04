@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PhenomenologicalStudy.API.Models.Authentication
+namespace PhenomenologicalStudy.API.Models
 {
   public class RefreshToken
   {

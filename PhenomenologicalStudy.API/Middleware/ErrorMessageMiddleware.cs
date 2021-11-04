@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-namespace PhenomenologicalStudy.API
+namespace PhenomenologicalStudy.API.Middleware
 {
     /// <summary>
     /// Class responsible for reading accept request header and content type of an HTTP request 

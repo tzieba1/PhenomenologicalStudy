@@ -436,7 +436,7 @@ namespace PhenomenologicalStudy.API.Migrations
           column: "UserId");
 
       // Trigger to handle Created and Updated times for Reflections table that will reset these two fields when the row is updated
-      migrationBuilder.Sql("CREATE OR REPLACE TRIGGER dbo.SetUpdatedTimeAndCreationTimeReflections " +
+      migrationBuilder.Sql("CREATE TRIGGER dbo.SetUpdatedTimeAndCreationTimeReflections " +
                            "ON dbo.Reflections " +
                            "AFTER UPDATE AS " +
                            "BEGIN IF NOT UPDATE(UpdatedTime) " +
@@ -449,7 +449,7 @@ namespace PhenomenologicalStudy.API.Migrations
                            "END");
 
       // Trigger to handle Created and Updated times for Comments table that will reset these two fields when the row is updated
-      migrationBuilder.Sql("CREATE OR REPLACE TRIGGER dbo.SetUpdatedTimeAndCreationTimeComments " +
+      migrationBuilder.Sql("CREATE TRIGGER dbo.SetUpdatedTimeAndCreationTimeComments " +
                            "ON dbo.Comments " +
                            "AFTER UPDATE AS " +
                            "BEGIN IF NOT UPDATE(UpdatedTime) " +
@@ -461,16 +461,16 @@ namespace PhenomenologicalStudy.API.Migrations
                               "END " +
                            "END");
 
-      // Trigger to handle Created and Updated times for ChildrenEmotions table that will reset these two fields when the row is updated
-      migrationBuilder.Sql("CREATE OR REPLACE TRIGGER dbo.SetUpdatedTimeAndCreationTimeChildrenEmotions " +
+      // Trigger to handle Created and Updated times for ChildrenEmotions table that will reset these two fields when the row is updated with new emotion
+      migrationBuilder.Sql("CREATE TRIGGER dbo.SetUpdatedTimeAndCreationTimeChildrenEmotions " +
                            "ON dbo.ChildrenEmotions " +
                            "AFTER UPDATE AS " +
                            "BEGIN IF NOT UPDATE(UpdatedTime) " +
                               "BEGIN UPDATE new " +
                                 "SET UpdatedTime = CURRENT_TIMESTAMP, CreationTime = d.CreationTime " +
                                 "FROM ChildrenEmotions new " +
-                                "INNER JOIN inserted i ON new.id = i.id " +
-                                "INNER JOIN deleted d ON new.id = d.id " +
+                                "INNER JOIN inserted i ON new.emotionid = i.emotionid " +
+                                "INNER JOIN deleted d ON new.emotionid = d.emotionid " +
                               "END " +
                            "END");
     }

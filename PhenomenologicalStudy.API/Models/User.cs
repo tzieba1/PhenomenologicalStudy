@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using PhenomenologicalStudy.API.Models.Authentication;
+using PhenomenologicalStudy.API.Authentication;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

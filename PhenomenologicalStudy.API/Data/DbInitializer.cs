@@ -17,8 +17,8 @@ namespace PhenomenologicalStudy.API.Data
     /// <summary>
     /// Needed to access secrets stored locally in a secrets.js file
     /// </summary>
-    public static Secrets Secrets { get; set; } // Use application settings to access secrets from environment configuration 
-    public static IConfiguration Configuration { get; set; } // Access secrets from an IConfiguration service with key vault configured
+    public static DbInitializerConfiguration Configuration { get; set; } // Use application settings to access secrets from environment configuration 
+    //public static IConfiguration Configuration { get; set; } // Access secrets from an IConfiguration service with key vault configured
 
     public static async Task<int> SeedUsersAndRoles(IServiceProvider serviceProvider)
     {
@@ -70,14 +70,14 @@ namespace PhenomenologicalStudy.API.Data
       // Create Admin User
       var adminUser = new User
       {
-        UserName = "demo.admin@example.ca",
-        Email = "demo.admin@example.ca",
+        UserName = "demo.admin@example.com",
+        Email = "demo.admin@example.com",
         FirstName = "Demo",
         LastName = "Admin",
         EmailConfirmed = true
       };
-      //var result = await userManager.CreateAsync(adminUser, AppSecrets.DemoAdminPassword);
-      var result = await userManager.CreateAsync(adminUser, Configuration["DemoAdminPassword"]);
+      var result = await userManager.CreateAsync(adminUser, Configuration.DemoAdminPassword);
+      //var result = await userManager.CreateAsync(adminUser, Configuration["DemoAdminPassword"]);
       if (!result.Succeeded)
         return 1;  // should log an error message here
 
@@ -94,14 +94,14 @@ namespace PhenomenologicalStudy.API.Data
       // Create Participant User
       var participantUser = new User
       {
-        UserName = "demo.participant@example.ca",
-        Email = "demo.participant@example.ca",
+        UserName = "demo.participant@example.com",
+        Email = "demo.participant@example.com",
         FirstName = "Demo",
         LastName = "Participant",
         EmailConfirmed = true
       };
-      //result = await userManager.CreateAsync(managerUser, AppSecrets.DemoParticipantPassword);
-      result = await userManager.CreateAsync(participantUser, Configuration["DemoParticipantPassword"]);
+      result = await userManager.CreateAsync(participantUser, Configuration.DemoParticipantPassword);
+      //result = await userManager.CreateAsync(participantUser, Configuration["DemoParticipantPassword"]);
       if (!result.Succeeded)
         return 3;  // should log an error message here
 

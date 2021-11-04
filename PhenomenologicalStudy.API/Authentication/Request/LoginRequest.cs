@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace PhenomenologicalStudy.API.Models.Authentication.Request
+namespace PhenomenologicalStudy.API.Authentication.Request
 {
   public class LoginRequest
   {

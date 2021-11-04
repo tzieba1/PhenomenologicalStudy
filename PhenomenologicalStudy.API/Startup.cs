@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -16,7 +17,9 @@ using PhenomenologicalStudy.API.Authorization.Handlers;
 using PhenomenologicalStudy.API.Authorization.Requirements;
 using PhenomenologicalStudy.API.Configuration;
 using PhenomenologicalStudy.API.Data;
+using PhenomenologicalStudy.API.Middleware;
 using PhenomenologicalStudy.API.Models;
+using PhenomenologicalStudy.API.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +40,10 @@ namespace PhenomenologicalStudy.API
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
+      // Needed to set up email sender service
+      services.AddTransient<IEmailSender, EmailSender>();
+      services.Configure<EmailSenderOptions>(Configuration.GetSection("SendGridCredentials"));
+
       // Needed to access secrets from Azure Key Vault
       services.AddSingleton(Configuration);
 
@@ -62,7 +69,7 @@ namespace PhenomenologicalStudy.API
         options.SuppressModelStateInvalidFilter = true;
       });
 
-      // Add JWT from 'JwtConfig' section of appsettings.json (make secrets available to the application)
+      // Add JWT from 'JwtConfig' section of configuration (secret)
       services.Configure<JwtConfiguration>(Configuration.GetSection("JwtConfig"));
 
       // Add SQL server with Entity Framework using DefaultConnection from appsettings.json
@@ -76,6 +83,7 @@ namespace PhenomenologicalStudy.API
                 .AddDefaultTokenProviders();
 
       // Instantiate JWT validation parameters here to ensure single issuer signing key for token validation
+      var jwtConfig = Configuration.GetSection("JwtConfig").Get<JwtConfiguration>();
       TokenValidationParameters tokenValidationParams = new()
       {
         ValidateIssuerSigningKey = true,  // Validates 3rd part of JWT token (encrypted part) generated from secret in JwtConfig 
@@ -83,9 +91,9 @@ namespace PhenomenologicalStudy.API
         ValidateAudience = true,
         ValidateLifetime = true,
         RequireExpirationTime = false,
-        ValidAudience = Configuration["JwtConfig:ValidAudience"],
-        ValidIssuer = Configuration["JwtConfig:ValidIssuer"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JwtConfig:Secret"]))  // Encrypts JWT tokens
+        ValidAudience = jwtConfig.ValidAudience,
+        ValidIssuer = jwtConfig.ValidIssuer,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig.PrivateKey))  // Encrypts JWT tokens
       };
 
       // Add Authentication (with JWT Bearer) 

@@ -2,7 +2,7 @@
 using PhenomenologicalStudy.API.Models;
 using System;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using PhenomenologicalStudy.API.Models.Authentication;
+using PhenomenologicalStudy.API.Authentication;
 
 namespace PhenomenologicalStudy.API.Data
 {

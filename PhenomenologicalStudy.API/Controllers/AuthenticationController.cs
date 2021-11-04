@@ -12,10 +12,11 @@ using System.Threading.Tasks;
 using System.Security.Claims;
 using PhenomenologicalStudy.API.Models;
 using PhenomenologicalStudy.API.Data;
-using PhenomenologicalStudy.API.Models.Authentication;
 using Microsoft.EntityFrameworkCore;
-using PhenomenologicalStudy.API.Models.Authentication.Response;
-using PhenomenologicalStudy.API.Models.Authentication.Request;
+using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Hosting;
+using PhenomenologicalStudy.API.Authentication.Request;
+using PhenomenologicalStudy.API.Authentication.Response;
 
 namespace PhenomenologicalStudy.API.Controllers
 {
@@ -31,14 +32,14 @@ namespace PhenomenologicalStudy.API.Controllers
 
     public AuthenticationController(
       UserManager<User> userManager,
-      IOptionsMonitor<JwtConfiguration> optionsMonitor,
+      IConfiguration config,
       TokenValidationParameters tokenValidationParams,
       PhenomenologicalStudyContext userDbContext)
     {
-      _userManager = userManager;                     // Manages users for registration(creation)/login and validation
-      _jwtConfig = optionsMonitor.CurrentValue;       // Inject appsettings.json into this controller
-      _userDbContext = userDbContext;                 // Needed to handle RefreshTokens on the database
-      _tokenValidationParams = tokenValidationParams; // For generating and validating JWTs
+      _userManager = userManager;                                           // Manages users for registration(creation)/login and validation
+      _jwtConfig = config.GetSection("JwtConfig").Get<JwtConfiguration>();  // Inject secret JWT configuration into this controller
+      _userDbContext = userDbContext;                                       // Needed to handle RefreshTokens on the database
+      _tokenValidationParams = tokenValidationParams;                       // For generating and validating JWTs
     }
 
     /// <summary>
@@ -156,14 +157,14 @@ namespace PhenomenologicalStudy.API.Controllers
     }
 
     /// <summary>
-    /// Use a configuration secret to generate a JWT token with a SecurityTokenDescriptor.
+    /// Use a configuration private key to generate a JWT token with a SecurityTokenDescriptor.
     /// </summary>
     /// <param name="user"></param>
     /// <returns></returns>
     async private Task<Jwt> GenerateJwt(User user)
     {
       JwtSecurityTokenHandler jwtTokenHandler = new();
-      byte[] key = Encoding.UTF8.GetBytes(_jwtConfig.Secret);
+      byte[] key = Encoding.UTF8.GetBytes(_jwtConfig.PrivateKey);
 
       // SecurityTokenDescriptor works to register claims to a JwtPayload (e.g. Subject -> sub, Expires -> exp)
       SecurityTokenDescriptor tokenDescriptor = new()

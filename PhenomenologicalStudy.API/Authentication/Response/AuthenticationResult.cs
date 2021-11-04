@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PhenomenologicalStudy.API.Models.Authentication.Response
+namespace PhenomenologicalStudy.API.Authentication.Response
 {
   /// <summary>
   /// Base class responsible for data transfer objects.
