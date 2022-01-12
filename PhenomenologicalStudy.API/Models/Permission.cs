@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace PhenomenologicalStudy.API.Models
 {
   public class Permission
-  {
+  { 
     [Key]
     [Required]
     public Guid Id { get; set; }

@@ -9,6 +9,10 @@ using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using PhenomenologicalStudy.API.Configuration;
 using PhenomenologicalStudy.API.Models;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.IO;
+using PhenomenologicalStudy.API.Models.ManyToMany;
+using ReflectionAPI.Models;
 
 namespace PhenomenologicalStudy.API.Data
 {
@@ -39,11 +43,11 @@ namespace PhenomenologicalStudy.API.Data
         return 2;  // should log an error message here
 
       // Check if users already exist and exit if there are
-      if (userManager.Users.Count() > 0)
+      if (userManager.Users.Any())
         return 3;  // should log an error message here
 
       // Seed users
-      result = await SeedUsers(userManager);
+      result = await SeedUsers(userManager, context);
       if (result != 0)
         return 4;  // should log an error message here
 
@@ -65,10 +69,10 @@ namespace PhenomenologicalStudy.API.Data
       return 0;
     }
 
-    private static async Task<int> SeedUsers(UserManager<User> userManager)
+    private static async Task<int> SeedUsers(UserManager<User> userManager, PhenomenologicalStudyContext context)
     {
-      // Create Admin User
-      var adminUser = new User
+      // --- Create Admin User
+      User adminUser = new()
       {
         UserName = "demo.admin@example.com",
         Email = "demo.admin@example.com",
@@ -76,23 +80,31 @@ namespace PhenomenologicalStudy.API.Data
         LastName = "Admin",
         EmailConfirmed = true
       };
-      var result = await userManager.CreateAsync(adminUser, Configuration.DemoAdminPassword);
+      IdentityResult result = await userManager.CreateAsync(adminUser, Configuration.DemoAdminPassword);
       //var result = await userManager.CreateAsync(adminUser, Configuration["DemoAdminPassword"]);
       if (!result.Succeeded)
         return 1;  // should log an error message here
 
-      // Assign user to Admin role
-      result = await userManager.AddToRoleAsync(adminUser, "Admin");
+      // Retrieve created admin for more demo data to be added (related to them)
+      User createdAdmin = await userManager.FindByEmailAsync(adminUser.Email);
+
+      // Assign user to Admin role in the database
+      result = await userManager.AddToRoleAsync(createdAdmin, "Admin");
       if (!result.Succeeded)
         return 2;  // should log an error message here
 
-      // Add claim for a permission with a value of either "grant" or "deny"
-      result = await userManager.AddClaimAsync(adminUser, new Claim("examplePermission", "grant"));
+      // Add "Admin" claim to roles
+      result = await userManager.AddClaimAsync(adminUser, new Claim(ClaimTypes.Role, "Admin"));
       if (!result.Succeeded)
-        return 7;  // should log an error message here
+        return 3;  // should log an error message here
 
-      // Create Participant User
-      var participantUser = new User
+      // Add claim for a permission with a value of either "grant" or "deny"
+      //result = await userManager.AddClaimAsync(adminUser, new Claim("examplePermission", "grant"));
+
+      //IList<string> roles = await userManager.GetRolesAsync(createdAdmin);  // Retrieve roles
+
+      // --- Create Participant User
+      User participantUser = new()
       {
         UserName = "demo.participant@example.com",
         Email = "demo.participant@example.com",
@@ -100,17 +112,76 @@ namespace PhenomenologicalStudy.API.Data
         LastName = "Participant",
         EmailConfirmed = true
       };
+
       result = await userManager.CreateAsync(participantUser, Configuration.DemoParticipantPassword);
       //result = await userManager.CreateAsync(participantUser, Configuration["DemoParticipantPassword"]);
       if (!result.Succeeded)
         return 3;  // should log an error message here
 
-      // Assign user to Manager role
-      result = await userManager.AddToRoleAsync(participantUser, "Participant");
+      // Retrieve created participant for more demo data to be added (related to them)
+      User createdParticipant = await userManager.FindByEmailAsync(participantUser.Email);
+
+      // Assign user to Particiapnt role
+      result = await userManager.AddToRoleAsync(createdParticipant, "Participant");
       if (!result.Succeeded)
-        return 4;  // should log an error message 
+        return 4;  // should log an error message
+
+      // Add "Participant" claim to roles
+      result = await userManager.AddClaimAsync(createdParticipant, new Claim(ClaimTypes.Role, "Participant"));
+      if (!result.Succeeded)
+        return 5;  // should log an error message here
+
+      // --- Create Child for demo participant
+      Child child = new()
+      {
+        User = createdParticipant,
+        FirstName = "Demo",
+        LastName = "Child",
+        DateOfBirth = new DateTimeOffset(new DateTime(2015, 04, 15)),
+        Gender = 'M'
+      };
+      EntityEntry<Child> addedChild = await context.Children.AddAsync(child); // Add newly related child to the database
+
+      // --- Create Reflection for demo participant
+      Reflection reflection = new() { User = createdParticipant, UpdatedTime = DateTimeOffset.UtcNow };
+      EntityEntry<Reflection> addedReflection = await context.Reflections.AddAsync(reflection);
+
+      // --- Add Reflection to Child (FK -> Child.ReflectionId)
+      addedChild.Entity.Reflection = addedReflection.Entity;
+
+      // --- Create ReflectionChild for newly created Reflection and Child.
+      EntityEntry<ReflectionChild> addedReflectionChild =
+        await context.ReflectionChildren.AddAsync(new ReflectionChild() { Child = addedChild.Entity, Reflection = addedReflection.Entity });
+
+      // --- Create Capture for demo reflection
+      Capture capture = new() { Reflection = reflection, Data = ConvertImageToByteArray("./Images/demo1.jpg") };
+      await context.Captures.AddAsync(capture);
+
+      // --- Create Comment for demo reflection
+      Comment comment = new() { Text = "Demo comment.", Reflection = reflection, UpdatedTime = DateTimeOffset.UtcNow };
+      await context.Comments.AddAsync(comment);
+
+      //ReflectionChild joinReflectionChild = await context.FindAsync(addedReflectionChild.Entity.Id);
+      // --- Create Emotion list for demo child and demo reflection that will relate to a single ReflectionChild
+      await context.Emotions.AddAsync(new Emotion() { Type = EmotionType.Overwhelmed, Intensity = 3, ReflectionChild = addedReflectionChild.Entity });
+      await context.Emotions.AddAsync(new Emotion() { Type = EmotionType.Frustrated, Intensity = 6, ReflectionChild = addedReflectionChild.Entity });
+
+      await context.SaveChangesAsync(); // Save database changes
 
       return 0; // Log seed success message
+    }
+
+    private static byte[] ConvertImageToByteArray(string imagePath)
+    {
+      byte[] imageByteArray = null;
+      FileStream fileStream = new(imagePath, FileMode.Open, FileAccess.Read);
+      using (BinaryReader reader = new(fileStream))
+      {
+        imageByteArray = new byte[reader.BaseStream.Length];
+        for (int i = 0; i < reader.BaseStream.Length; i++)
+          imageByteArray[i] = reader.ReadByte();
+      }
+      return imageByteArray;
     }
   }
 }

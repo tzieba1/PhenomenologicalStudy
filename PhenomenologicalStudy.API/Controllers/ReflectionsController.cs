@@ -1,116 +1,156 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PhenomenologicalStudy.API.Data;
-using PhenomenologicalStudy.API.Models;
+using PhenomenologicalStudy.API.Models.DataTransferObjects;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Capture;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Comment;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Reflection;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.ReflectionChild;
+using PhenomenologicalStudy.API.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace PhenomenologicalStudy.API.Controllers
 {
   [Route("api/[controller]")]
+  [Authorize]
   [ApiController]
-  [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)] // Add header "Authorization": "Bearer {jwt}" where jwt from login.
   public class ReflectionsController : ControllerBase
   {
-    private readonly PhenomenologicalStudyContext _context;
+    private readonly IReflectionService _reflectionService;
 
-    public ReflectionsController(PhenomenologicalStudyContext context)
+    public ReflectionsController(IReflectionService reflectionService)
     {
-      _context = context;
+      _reflectionService = reflectionService;
     }
 
-    // GET: api/Reflections
-    [HttpGet]
-    [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<IEnumerable<Reflection>>> GetReflections()
-    {
-      return await _context.Reflections.ToListAsync();
-    }
-
-    // GET: api/Reflections/5
-    [HttpGet("{id}")]
-    [Authorize(Policy = "ExamplePermissionPolicy")]
-    [Authorize(Roles = "Admin, Participant")]
-    public async Task<ActionResult<Reflection>> GetReflection(Guid id)
-    {
-      var reflection = await _context.Reflections.FindAsync(id);
-
-      if (reflection == null)
-      {
-        return NotFound();
-      }
-
-      return reflection;
-    }
-
-    // PUT: api/Reflections/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [Authorize(Roles = "Participant")]
-    public async Task<IActionResult> PutReflection(Guid id, Reflection reflection)
-    {
-      if (id != reflection.Id)
-      {
-        return BadRequest();
-      }
-
-      _context.Entry(reflection).State = EntityState.Modified;
-
-      try
-      {
-        await _context.SaveChangesAsync();
-      }
-      catch (DbUpdateConcurrencyException)
-      {
-        if (!ReflectionExists(id))
-        {
-          return NotFound();
-        }
-        else
-        {
-          throw;
-        }
-      }
-
-      return NoContent();
-    }
-
-    // POST: api/Reflections
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPost]
-    public async Task<ActionResult<Reflection>> PostReflection(Reflection reflection)
-    {
-      _context.Reflections.Add(reflection);
-      await _context.SaveChangesAsync();
-
-      return CreatedAtAction("GetReflection", new { id = reflection.Id }, reflection);
-    }
-
-    // DELETE: api/Reflections/5
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Participant")]
-    public async Task<IActionResult> DeleteReflection(Guid id)
+    public async Task<ActionResult<ServiceResponse<Guid>>> DeleteReflection(Guid id)
     {
-      var reflection = await _context.Reflections.FindAsync(id);
-      if (reflection == null)
-      {
-        return NotFound();
-      }
-
-      _context.Reflections.Remove(reflection);
-      await _context.SaveChangesAsync();
-
-      return NoContent();
+      return Ok(await _reflectionService.DeleteReflection(id));
     }
 
-    private bool ReflectionExists(Guid id)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Roles = "Participant")]
+    [HttpGet]
+    public async Task<ActionResult<ServiceResponse<List<GetReflectionDto>>>> GetUserReflections()
     {
-      return _context.Reflections.Any(e => e.Id == id);
+      return Ok(await _reflectionService.GetUserReflections());
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Roles = "Participant, Admin")]
+    [HttpGet("Captures")]
+    public async Task<ActionResult<ServiceResponse<List<GetCaptureDto>>>> GetReflectionCaptures()
+    {
+      return Ok(await _reflectionService.GetReflectionCaptures());
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="reflectionChild"></param>
+    /// <returns></returns>
+    [Authorize(Roles = "Participant")]
+    [HttpPost("Children")]
+    public async Task<ActionResult<ServiceResponse<Guid>>> PostReflectionChild(AddReflectionChildDto reflectionChild)
+    {
+      return Ok(await _reflectionService.PostReflectionChild(reflectionChild));
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="rid"></param>
+    /// <param name="cid"></param>
+    /// <returns></returns>
+    [Authorize(Roles = "Participant")]
+    [HttpDelete("{rid}/Children/{cid}")]
+    public async Task<ActionResult<ServiceResponse<Guid>>> DeleteReflectionChild(Guid rid, Guid cid)
+    {
+      return Ok(await _reflectionService.DeleteReflectionChild(rid, cid));
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="reflectionChildEmotion"></param>
+    /// <returns></returns>
+    [Authorize(Roles = "Participant")]
+    [HttpPost("Children/Emotions")]
+    public async Task<ActionResult<ServiceResponse<Guid>>> PostReflectionChildEmotion(AddReflectionChildEmotionDto reflectionChildEmotion)
+    {
+      return Ok(await _reflectionService.PostReflectionChildEmotion(reflectionChildEmotion));
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Roles = "Participant, Admin")]
+    [HttpGet("{id}/Capture")]
+    public async Task<ActionResult<ServiceResponse<GetCaptureDto>>> GetReflectionCaptureById(Guid id)
+    {
+      return Ok(await _reflectionService.GetReflectionCaptureById(id));
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [Authorize(Roles = "Admin")]
+    [HttpGet("All")]
+    public async Task<ActionResult<ServiceResponse<List<GetUserReflectionDto>>>> GetAllReflections()
+    {
+      return Ok(await _reflectionService.GetAllReflections());
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [Authorize(Roles = "Participant, Admin")]
+    [HttpGet("{id}")]
+    public async Task<ActionResult<ServiceResponse<GetReflectionDto>>> GetReflectionById(Guid id)
+    {
+      return Ok(await _reflectionService.GetReflectionById(id));
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="reflection"></param>
+    /// <returns></returns>
+    [Authorize(Roles = "Participant")]
+    [HttpPost]
+    public async Task<ActionResult<ServiceResponse<GetReflectionDto>>> PostReflection(AddReflectionStringDataDto reflection)
+    {
+      return Ok(await _reflectionService.PostReflection(reflection));
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="updatedComment"></param>
+    /// <returns></returns>
+    [Authorize(Roles = "Participant")]
+    [HttpPut("Comment")]
+    public async Task<ActionResult<ServiceResponse<GetCommentDto>>> UpdateReflectionComment(UpdateReflectionCommentDto updatedComment)
+    {
+      return Ok(await _reflectionService.UpdateReflectionComment(updatedComment));
     }
   }
 }

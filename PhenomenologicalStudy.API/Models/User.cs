@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using PhenomenologicalStudy.API.Authentication;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PhenomenologicalStudy.API.Models
 {
@@ -23,12 +21,10 @@ namespace PhenomenologicalStudy.API.Models
     [DataType(DataType.Date)]
     public DateTimeOffset? BirthDate { get; set; }
 
-    public byte[] ProfilePicture { get; set; }
-
-    public ICollection<Child> Children { get; set; }
-
-    public ICollection<Reflection> Reflections { get; set; }
-
-    public ICollection<RefreshToken> RefreshTokens { get; set; }
+    public ICollection<Child> Children { get; set; }  // Child *...1 User
+    public ICollection<Reflection> Reflections { get; set; }  // Reflection *...1 User
+    public ICollection<RefreshToken> RefreshTokens { get; set; }  // RefreshToken *...1 User
+    public DateTimeOffset CreationTime { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedTime { get; set; } = DateTimeOffset.UtcNow;
   }
 }

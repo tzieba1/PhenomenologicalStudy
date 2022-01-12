@@ -10,8 +10,8 @@ using PhenomenologicalStudy.API.Data;
 namespace PhenomenologicalStudy.API.Migrations
 {
     [DbContext(typeof(PhenomenologicalStudyContext))]
-    [Migration("20211104055235_init")]
-    partial class init
+    [Migration("20220112070236_Init")]
+    partial class Init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -122,11 +122,206 @@ namespace PhenomenologicalStudy.API.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Authentication.RefreshToken", b =>
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Capture", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTimeOffset>("CreationTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("Data")
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<Guid>("ReflectionId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("UpdatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReflectionId")
+                        .IsUnique();
+
+                    b.ToTable("Captures");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Child", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTimeOffset>("CreationTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("DateOfBirth")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("FirstName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Gender")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(1)");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ReflectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("UpdatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReflectionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Children");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Comment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTimeOffset>("CreationTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ReflectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("UpdatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReflectionId")
+                        .IsUnique();
+
+                    b.ToTable("Comments");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Emotion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTimeOffset>("CreationTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Intensity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("ReflectionChildId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("UpdatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReflectionChildId");
+
+                    b.ToTable("Emotions");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.ErrorMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ErrorMessages");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.ManyToMany.ReflectionChild", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<Guid>("ChildId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("ReflectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("UpdatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChildId")
+                        .IsUnique();
+
+                    b.HasIndex("ReflectionId");
+
+                    b.ToTable("ReflectionChildren");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Reflection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTimeOffset>("CreationTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("UpdatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reflections");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
 
                     b.Property<DateTimeOffset>("CreatedDate")
                         .HasColumnType("datetimeoffset");
@@ -154,207 +349,6 @@ namespace PhenomenologicalStudy.API.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Capture", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<byte[]>("Data")
-                        .IsRequired()
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<Guid>("ReflectionID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReflectionID");
-
-                    b.ToTable("Captures");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Child", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("DateOfBirth")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Gender")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(1)");
-
-                    b.Property<string>("LastName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("UsersId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UsersId");
-
-                    b.ToTable("Children");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.ChildEmotion", b =>
-                {
-                    b.Property<Guid>("ChildId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ReflectionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid>("EmotionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("UpdatedTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("ChildId", "ReflectionId");
-
-                    b.HasIndex("EmotionId");
-
-                    b.HasIndex("ReflectionId");
-
-                    b.ToTable("ChildrenEmotions");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Comment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid>("ReflectionID")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Text")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTimeOffset>("UpdatedTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReflectionID");
-
-                    b.ToTable("Comments");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Emotion", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("ChildId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int?>("Intensity")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChildId");
-
-                    b.ToTable("Emotions");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.ErrorMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("StatusCode")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ErrorMessages");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Permission", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("Badges")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("Camera")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("FileSystem")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("Microphone")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("PictureLibrary")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Permissions");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Reflection", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset>("UpdatedTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid?>("UsersId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UsersId");
-
-                    b.ToTable("Reflections");
                 });
 
             modelBuilder.Entity("PhenomenologicalStudy.API.Models.Role", b =>
@@ -401,6 +395,9 @@ namespace PhenomenologicalStudy.API.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTimeOffset>("CreationTime")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -440,14 +437,14 @@ namespace PhenomenologicalStudy.API.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<byte[]>("ProfilePicture")
-                        .HasColumnType("varbinary(max)");
-
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("UpdatedTime")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
@@ -517,7 +514,79 @@ namespace PhenomenologicalStudy.API.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Authentication.RefreshToken", b =>
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Capture", b =>
+                {
+                    b.HasOne("PhenomenologicalStudy.API.Models.Reflection", "Reflection")
+                        .WithOne("Capture")
+                        .HasForeignKey("PhenomenologicalStudy.API.Models.Capture", "ReflectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reflection");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Child", b =>
+                {
+                    b.HasOne("PhenomenologicalStudy.API.Models.Reflection", "Reflection")
+                        .WithMany()
+                        .HasForeignKey("ReflectionId");
+
+                    b.HasOne("PhenomenologicalStudy.API.Models.User", "User")
+                        .WithMany("Children")
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Reflection");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Comment", b =>
+                {
+                    b.HasOne("PhenomenologicalStudy.API.Models.Reflection", "Reflection")
+                        .WithOne("Comment")
+                        .HasForeignKey("PhenomenologicalStudy.API.Models.Comment", "ReflectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reflection");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Emotion", b =>
+                {
+                    b.HasOne("PhenomenologicalStudy.API.Models.ManyToMany.ReflectionChild", "ReflectionChild")
+                        .WithMany("Emotions")
+                        .HasForeignKey("ReflectionChildId");
+
+                    b.Navigation("ReflectionChild");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.ManyToMany.ReflectionChild", b =>
+                {
+                    b.HasOne("PhenomenologicalStudy.API.Models.Child", "Child")
+                        .WithOne("ReflectionChild")
+                        .HasForeignKey("PhenomenologicalStudy.API.Models.ManyToMany.ReflectionChild", "ChildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhenomenologicalStudy.API.Models.Reflection", "Reflection")
+                        .WithMany("Children")
+                        .HasForeignKey("ReflectionId");
+
+                    b.Navigation("Child");
+
+                    b.Navigation("Reflection");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Reflection", b =>
+                {
+                    b.HasOne("PhenomenologicalStudy.API.Models.User", "User")
+                        .WithMany("Reflections")
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.RefreshToken", b =>
                 {
                     b.HasOne("PhenomenologicalStudy.API.Models.User", "User")
                         .WithMany("RefreshTokens")
@@ -528,94 +597,23 @@ namespace PhenomenologicalStudy.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Capture", b =>
-                {
-                    b.HasOne("PhenomenologicalStudy.API.Models.Reflection", "Reflection")
-                        .WithMany()
-                        .HasForeignKey("ReflectionID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Reflection");
-                });
-
             modelBuilder.Entity("PhenomenologicalStudy.API.Models.Child", b =>
                 {
-                    b.HasOne("PhenomenologicalStudy.API.Models.User", "Users")
-                        .WithMany("Children")
-                        .HasForeignKey("UsersId");
-
-                    b.Navigation("Users");
+                    b.Navigation("ReflectionChild");
                 });
 
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.ChildEmotion", b =>
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.ManyToMany.ReflectionChild", b =>
                 {
-                    b.HasOne("PhenomenologicalStudy.API.Models.Child", "Child")
-                        .WithMany()
-                        .HasForeignKey("ChildId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhenomenologicalStudy.API.Models.Emotion", "Emotion")
-                        .WithMany()
-                        .HasForeignKey("EmotionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhenomenologicalStudy.API.Models.Reflection", "Reflection")
-                        .WithMany()
-                        .HasForeignKey("ReflectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Child");
-
-                    b.Navigation("Emotion");
-
-                    b.Navigation("Reflection");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Comment", b =>
-                {
-                    b.HasOne("PhenomenologicalStudy.API.Models.Reflection", "Reflection")
-                        .WithMany()
-                        .HasForeignKey("ReflectionID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Reflection");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Emotion", b =>
-                {
-                    b.HasOne("PhenomenologicalStudy.API.Models.Child", null)
-                        .WithMany("Emotions")
-                        .HasForeignKey("ChildId");
-                });
-
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Permission", b =>
-                {
-                    b.HasOne("PhenomenologicalStudy.API.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
+                    b.Navigation("Emotions");
                 });
 
             modelBuilder.Entity("PhenomenologicalStudy.API.Models.Reflection", b =>
                 {
-                    b.HasOne("PhenomenologicalStudy.API.Models.User", "Users")
-                        .WithMany("Reflections")
-                        .HasForeignKey("UsersId");
+                    b.Navigation("Capture");
 
-                    b.Navigation("Users");
-                });
+                    b.Navigation("Children");
 
-            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Child", b =>
-                {
-                    b.Navigation("Emotions");
+                    b.Navigation("Comment");
                 });
 
             modelBuilder.Entity("PhenomenologicalStudy.API.Models.User", b =>

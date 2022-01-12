@@ -7,29 +7,25 @@ using System.Xml.Serialization;
 
 namespace PhenomenologicalStudy.API.Models
 {
-    public class ErrorMessage
+  public class ErrorMessage
+  {
+    public Guid Id { get; set; }
+
+    public String Message { get; set; }
+
+    public UInt16 StatusCode { get; set; }
+
+    public ErrorMessage(UInt16 statusCode, String message)
     {
-      
-        public Guid Id { get; set; }
-
-       
-        public String Message { get; set; }
-
-      
-        public UInt16 StatusCode { get; set; }
-
-
-        public ErrorMessage(UInt16 statusCode, String message)
-        {
-            Message = message;
-            StatusCode = statusCode;
-        }
-        public ErrorMessage(String message)
-        {
-            Id = Guid.NewGuid();
-            Message = message;
-        }
-
-        public ErrorMessage() { }
+      Message = message;
+      StatusCode = statusCode;
     }
+    public ErrorMessage(String message)
+    {
+      Id = Guid.NewGuid();
+      Message = message;
+    }
+
+    public ErrorMessage() { }
+  }
 }

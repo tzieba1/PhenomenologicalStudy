@@ -1,4 +1,6 @@
-﻿using System;
+﻿using PhenomenologicalStudy.API.Models.ManyToMany;
+using ReflectionAPI.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -11,10 +13,10 @@ namespace PhenomenologicalStudy.API.Models
     [Key]
     [Required]
     public Guid Id { get; set; }
-
-    [Required]
-    public string Name { get; set; }
-    
-    public int? Intensity { get; set; }
+    public EmotionType Type { get; set; }
+    public int Intensity { get; set; }
+    public ReflectionChild ReflectionChild { get; set; }  // ReflectionChild 1...* Emotion
+    public DateTimeOffset CreationTime { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedTime { get; set; } = DateTimeOffset.UtcNow;
   }
 }

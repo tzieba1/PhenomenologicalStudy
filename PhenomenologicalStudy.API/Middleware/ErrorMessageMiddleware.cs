@@ -64,7 +64,7 @@ namespace PhenomenologicalStudy.API.Middleware
                 } 
                 catch (Exception ex)  // Including specific SQL error message to save to database with ErrorMessage object and return as serialized object to client.
                 {
-                    ErrorMessage errorMessage = new ErrorMessage() { Message = ex.Message, StatusCode = 500 };
+                    ErrorMessage errorMessage = new() { Message = ex.Message, StatusCode = 500 };
                     context.Response.StatusCode = 500;
                     dbContext.ErrorMessages.Add(errorMessage);
                     await dbContext.SaveChangesAsync();

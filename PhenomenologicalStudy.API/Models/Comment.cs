@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Identity;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -12,42 +13,10 @@ namespace PhenomenologicalStudy.API.Models
     [Key]
     [Required]
     public Guid Id { get; set; }
-
-    [Required]
-    public Guid ReflectionID { get; set; }
-
-    [ForeignKey(nameof(ReflectionID))]
-    public Reflection Reflection { get; set; }
-
-    [Required]
-    public string Text { get; set; }
-
-    [NotMapped]
-    [JsonIgnore]
-    [XmlElement("CreationTime")]
-    public string CreationTimeOnForXml // format: 2011-11-11T15:05:46.4733406+01:00
-    {
-      get { return CreationTime.ToString("o"); } // o = yyyy-MM-ddTHH:mm:ss.fffffffzzz
-      set { CreationTime = DateTimeOffset.Parse(value); }
-    }
-
-    [XmlIgnore]
-    [Required]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public DateTimeOffset CreationTime { get; set; }
-
-    [NotMapped]
-    [JsonIgnore]
-    [XmlElement("UpdatedTime")]
-    public string UpdatedTimeForXml // format: 2011-11-11T15:05:46.4733406+01:00
-    {
-      get { return UpdatedTime.ToString("o"); } // o = yyyy-MM-ddTHH:mm:ss.fffffffzzz
-      set { UpdatedTime = DateTimeOffset.Parse(value); }
-    }
-
-    [XmlIgnore]
-    [Required]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public DateTimeOffset UpdatedTime { get; set; }
+    public Reflection Reflection { get; set; }  // Comment 1...1 Reflection
+    public Guid ReflectionId { get; set; }  // Comment depends on Reflection (delete Reflection -> delete Comment)
+    public string Text { get; set; } = "";
+    public DateTimeOffset CreationTime { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedTime { get; set; } = DateTimeOffset.UtcNow;
   }
 }

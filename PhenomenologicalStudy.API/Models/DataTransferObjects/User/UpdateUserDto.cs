@@ -4,21 +4,17 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PhenomenologicalStudy.API.Authentication.Request
+namespace PhenomenologicalStudy.API.Models.DataTransferObjects.User
 {
-  public class RegisterRequest
+  public class UpdateUserDto
   {
-    [Required]
+    public Guid Id { get; set; }
     public string FirstName { get; set; }
-
-    [Required]
     public string LastName { get; set; }
-
-    [Required]
     [EmailAddress]
     public string Email { get; set; }
-
-    [Required]
-    public string Password { get; set; }
+    [DataType(DataType.Date)]
+    public DateTimeOffset? BirthDate { get; set; }
+    public string Role { get; set; }
   }
 }

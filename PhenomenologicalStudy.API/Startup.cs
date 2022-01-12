@@ -2,27 +2,23 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PhenomenologicalStudy.API.Authorization.Handlers;
 using PhenomenologicalStudy.API.Authorization.Requirements;
 using PhenomenologicalStudy.API.Configuration;
 using PhenomenologicalStudy.API.Data;
-using PhenomenologicalStudy.API.Middleware;
 using PhenomenologicalStudy.API.Models;
 using PhenomenologicalStudy.API.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using PhenomenologicalStudy.API.Services.Interfaces;
+using Swashbuckle.AspNetCore.Filters;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -40,37 +36,55 @@ namespace PhenomenologicalStudy.API
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
-      // Needed to set up email sender service
-      services.AddTransient<IEmailSender, EmailSender>();
+      services.AddCors();
+      services.AddTransient<IEmailSender, EmailSender>(); // Needed to set up email sender service
       services.Configure<EmailSenderOptions>(Configuration.GetSection("EmailSenderOptions"));
 
-      // Needed to access secrets from Azure Key Vault
-      services.AddSingleton(Configuration);
+      services.AddAutoMapper(typeof(Startup));            // Map DTO models and database models
+      services.AddScoped<IAuthService, AuthService>();    // JWT authentication with email confirmation
+      services.AddScoped<IReflectionService, ReflectionService>();    // Main collection service
+      services.AddScoped<IEmotionService, EmotionService>();          
+      services.AddScoped<IUserService, UserService>();    
+      services.AddScoped<IChildService, ChildService>();    
 
-      // Authorization policies added using custom requirements from PhenomenologicalStudy.API.Authorization.Requirements namespace
-      services.AddAuthorization(OptionsBuilderConfigurationExtensions =>
+      services.AddSingleton(Configuration); // Needed to access secrets from Azure Key Vault
+      services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>(); // Retrieve request data from HTTP context (such as claims: NameIdentifier -> User.Id)
+
+      // Add JWT from 'JwtConfig' section of configuration (secret)
+      services.Configure<JwtConfiguration>(Configuration.GetSection("JwtConfig"));
+
+      // EXAMPLE: Authorization policies added using custom requirements from PhenomenologicalStudy.API.Authorization.Requirements namespace
+      services.AddAuthorization(options =>
       {
-        OptionsBuilderConfigurationExtensions.AddPolicy("ExamplePermissionPolicy", p => 
-          { 
+        options.AddPolicy("Admin",
+            authBuilder =>
+            {
+              authBuilder.RequireRole("Admin");
+            });
+
+        options.AddPolicy("Participant",
+            authBuilder =>
+            {
+              authBuilder.RequireRole("Participant");
+            });
+        options.AddPolicy("ExamplePermissionPolicy", p =>
+          {
             p.RequireRole("Admin");
             p.Requirements.Add(new ExamplePermissionRequirement("grant"));
           });
       });
 
-      // Needed to handle authorization requirements added to authorization policies above
+      // EXAMPLE: Needed to handle authorization requirements added to authorization policies above
       services.AddSingleton<IAuthorizationHandler, ExamplePermissionRequirementHandler>();
 
       // Needed to create DbContext interface as dependency injectable service for adding/saving to database within middleware invokation.
-      services.AddScoped<IPhenomenologicalStudyContext, PhenomenologicalStudyContext>();
+      //services.AddScoped<IPhenomenologicalStudyContext, PhenomenologicalStudyContext>();
 
       // Disable the default behaviour where invalid model state is automatically thrown because it is handled with middleware
-      services.Configure<ApiBehaviorOptions>(options =>
-      {
-        options.SuppressModelStateInvalidFilter = true;
-      });
-
-      // Add JWT from 'JwtConfig' section of configuration (secret)
-      services.Configure<JwtConfiguration>(Configuration.GetSection("JwtConfig"));
+      //services.Configure<ApiBehaviorOptions>(options =>
+      //{
+      //  options.SuppressModelStateInvalidFilter = true;
+      //});
 
       // Add SQL server with Entity Framework using DefaultConnection from appsettings.json
       services.AddDbContext<PhenomenologicalStudyContext>(options =>
@@ -78,9 +92,20 @@ namespace PhenomenologicalStudy.API
               Configuration.GetConnectionString("DefaultConnection")));
 
       // Add Identity
-      services.AddIdentity<User, Role>(options => options.SignIn.RequireConfirmedAccount = true)
+      services.AddIdentity<User, Role>(options =>
+                  {
+                    options.SignIn.RequireConfirmedAccount = true;
+                    //options.Stores.ProtectPersonalData = true;                  // Enable use of ProtectedPersonalDataAnnotation
+                  })
                 .AddEntityFrameworkStores<PhenomenologicalStudyContext>()
-                .AddDefaultTokenProviders();
+                //.AddClaimsPrincipalFactory<CustomUserClaimsPrincipalFactory>()  // For adding custom claims
+                .AddDefaultTokenProviders();                                    // Used to generate and verify tokens for API actions performed by various actors (users) with various claims
+      //.AddTokenProvider<CreateReflectionTokenProvider>("CreateReflectionTokenProvider");
+
+      // Protected data requires these 3 classes extended from Identity interfaces (implemented in namespace Authorization.Extensions)
+      //services.AddScoped<ILookupProtectorKeyRing, KeyRing>();
+      //services.AddScoped<ILookupProtector, LookupProtector>();
+      //services.AddScoped<IPersonalDataProtector, PersonalDataProtector>();
 
       // Instantiate JWT validation parameters here to ensure single issuer signing key for token validation
       var jwtConfig = Configuration.GetSection("JwtConfig").Get<JwtConfiguration>();
@@ -90,7 +115,7 @@ namespace PhenomenologicalStudy.API
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
-        RequireExpirationTime = false,
+        RequireExpirationTime = true,
         ValidAudience = jwtConfig.ValidAudience,
         ValidIssuer = jwtConfig.ValidIssuer,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfig.PrivateKey))  // Encrypts JWT tokens
@@ -118,15 +143,25 @@ namespace PhenomenologicalStudy.API
           options.RequireHttpsMetadata = false;
           options.TokenValidationParameters = tokenValidationParams;
         });
+      
+      services.AddSingleton(tokenValidationParams); // Add JWT refresh service
 
-      // Add JWT refresh service
-      services.AddSingleton(tokenValidationParams);
+      services.AddControllers() // Configures common services for controllers
+        // Next line prevents an internal server error where object depth exceeds 32 or an object cycle occurs
+        .AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore);
 
-      // Included with project scaffolding
-      services.AddControllers();
+      // OpenAPI documentation configuration with swagger docs
       services.AddSwaggerGen(c =>
       {
         c.SwaggerDoc("v1", new OpenApiInfo { Title = "PhenomenologicalStudy.API", Version = "v1" });
+        c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+        {
+          Description = "Standard Authorization header using the Bearer scheme. Example: \"bearer {Value}\"",
+          In = ParameterLocation.Header,
+          Name = "Authorization", // Name of actual header
+          Type = SecuritySchemeType.ApiKey
+        });
+        c.OperationFilter<SecurityRequirementsOperationFilter>();
       });
     }
 
@@ -148,11 +183,14 @@ namespace PhenomenologicalStudy.API
 
       app.UseRouting();
 
+      // Allows cross-origin requests (needed for communicating with this API)
+      app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+
       app.UseAuthentication();
       app.UseAuthorization();
 
       // Add custom middleware which checks accept headers and errors
-      app.UseMiddleware<ErrorMessageMiddleware>();
+      //app.UseMiddleware<ErrorMessageMiddleware>();
 
       app.UseEndpoints(endpoints =>
       {

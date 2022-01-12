@@ -14,4 +14,3 @@ namespace PhenomenologicalStudy.Web.Areas.Identity.Pages.Account
         }
     }
 }
-

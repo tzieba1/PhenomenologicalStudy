@@ -42,6 +42,7 @@ namespace PhenomenologicalStudy.Web
           .AddEntityFrameworkStores<PhenomenologicalStudyContext>()
           .AddDefaultUI()
           .AddDefaultTokenProviders();
+          //.AddTokenProvider<CreateReflectionTokenProvider>("CreateReflectionTokenProvider");
       services.AddRazorPages();
     }
 
