@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PhenomenologicalStudy.API.Data;
@@ -27,12 +28,14 @@ namespace PhenomenologicalStudy.API.Services
     private readonly PhenomenologicalStudyContext _db;
     private readonly IMapper _mapper;
     private readonly IAuthService _authService;
+    private readonly UserManager<User> _userManager;
 
-    public ReflectionService(PhenomenologicalStudyContext db, IMapper mapper, IAuthService authService)
+    public ReflectionService(PhenomenologicalStudyContext db, IMapper mapper, IAuthService authService, UserManager<User> userManager)
     {
       _db = db;
       _mapper = mapper;
       _authService = authService;
+      _userManager = userManager;
     }
 
     /// <summary>
@@ -69,78 +72,32 @@ namespace PhenomenologicalStudy.API.Services
       return serviceResponse;
     }
 
-    ///// <summary>
-    ///// 
-    ///// </summary>
-    ///// <param name="reflectionChild"></param>
-    ///// <returns></returns>
-    //public async Task<ServiceResponse<GetUserReflectionDto>> DeleteReflectionChildEmotion(Guid reflectionId, Guid emotionId)
-    //{
-    //  ServiceResponse<GetUserReflectionDto> serviceResponse = new();
-    //  try
-    //  {
-    //    Guid bearerId = GetUserId();
-          
-    //    // --- Retrtieve the emotion to delete
-    //    Emotion emotionToDelete = await _db.Emotions.FindAsync(emotionId);
-    //    if (emotionToDelete != null)
-    //    {
-    //      _db.Emotions.Remove(emotionToDelete);
-    //      await _db.SaveChangesAsync(); // Needed to delete pseudo 'asynchronously' where DbSet<T>.Remove queues a delete operation executed during SaveChanges() or SaveChangesAsync()
-    //      serviceResponse.Messages.Add($"Emotion with id {emotionId} deleted successfully.");
-    //      serviceResponse.Data = _mapper.Map<GetUserReflectionDto>(await _db.Reflections
-    //        .Include(r => r.Comment)
-    //        .Include(r => r.Children)
-    //        .Where(r => r.User.Id == GetUserId() && r.Id == reflectionId)
-    //        .FirstOrDefaultAsync(r => r.Id == reflectionId));
-    //    }
-    //    else
-    //    {
-    //      serviceResponse.Success = false;
-    //      serviceResponse.Messages.Add("Emotion not found."); // No need for extra details.
-    //      serviceResponse.Status = HttpStatusCode.NotFound;
-    //    }
-    //    //Reflection reflection = await _db.Reflections
-    //    //  .Include(r => r.Capture)
-    //    //  .Include(r => r.Comment)
-    //    //  .Include(r => r.Children)
-    //    //  .Where(r => r.User.Id == bearerId)
-    //    //  .FirstOrDefaultAsync(r => r.Id == reflectionChild.ReflectionId);
-    //    //serviceResponse.Data = _mapper.Map<GetUserReflectionDto>(); 
-    //  }
-    //  catch (Exception ex)
-    //  {
-    //    serviceResponse.Status = HttpStatusCode.InternalServerError;
-    //    serviceResponse.Messages = new List<string>() { ex.Message };
-    //    serviceResponse.Success = false;
-    //  }
-    //  return serviceResponse;
-    //}
-
     /// <summary>
     /// 
     /// </summary>
+    /// <param name="reflectionChild"></param>
     /// <returns></returns>
-    public async Task<ServiceResponse<List<GetUserReflectionDto>>> GetUserReflections()
+    public async Task<ServiceResponse<Guid>> DeleteReflectionChildEmotion(Guid reflectionId, RemoveReflectionChildEmotionDto childEmotion)
     {
-      ServiceResponse<List<GetUserReflectionDto>> serviceResponse = new();
+      ServiceResponse<Guid> serviceResponse = new();
       try
       {
         Guid bearerId = _authService.GetUserId();
-        serviceResponse.Data = await _db.Reflections
-           .Include(r => r.Comment)
-           .Include(r => r.Children)
-           .Where(r => r.User.Id == bearerId)  // Only retrieve reflections for user logged in.
-           .Select(r => _mapper.Map<GetUserReflectionDto>(r))
-           .ToListAsync();
-        serviceResponse.Messages.Add($"Successfully retrieved all reflections for user '{await _db.Users.FindAsync(bearerId)}'");
 
-        // Add mapped Child and List<Emotion> entities to each ReflectionChild returned in service response data
-        foreach (GetUserReflectionDto reflection in serviceResponse.Data)
+        // --- Retrtieve the emotion to delete and check if not found
+        Emotion emotionToDelete = await _db.Emotions.FindAsync(childEmotion.EmotionId);
+        if (emotionToDelete == null)
         {
-          await RetrieveReflectionChildAndEmotions(reflection.Children);
+          serviceResponse.Success = false;
+          serviceResponse.Messages.Add("Emotion not found."); // No need for extra details.
+          serviceResponse.Status = HttpStatusCode.NotFound;
+          return serviceResponse;
         }
-        await _db.SaveChangesAsync();
+
+        _db.Emotions.Remove(emotionToDelete);
+        await _db.SaveChangesAsync(); // Needed to delete pseudo 'asynchronously' where DbSet<T>.Remove queues a delete operation executed during SaveChanges() or SaveChangesAsync()
+        serviceResponse.Messages.Add($"Emotion with id {childEmotion.EmotionId} deleted successfully.");
+        serviceResponse.Data = emotionToDelete.Id;
       }
       catch (Exception ex)
       {
@@ -155,18 +112,43 @@ namespace PhenomenologicalStudy.API.Services
     /// 
     /// </summary>
     /// <returns></returns>
-    public async Task<ServiceResponse<List<GetReflectionDto>>> GetAllReflections()
+    public async Task<ServiceResponse<List<GetReflectionDto>>> GetReflections()
     {
       ServiceResponse<List<GetReflectionDto>> serviceResponse = new();
       try
       {
+        // Retrieve user from bearer's userId claim
         Guid bearerId = _authService.GetUserId();
-        serviceResponse.Data = await _db.Reflections
+        User bearer = await _userManager.FindByIdAsync(bearerId.ToString());
+
+        // Check if bearer exists
+        if (bearer == null)
+        {
+          serviceResponse.Success = false;
+          serviceResponse.Messages.Add("Unauthorized.");
+          serviceResponse.Status = HttpStatusCode.Unauthorized;
+          return serviceResponse;
+        }
+
+        // Retrieve bearer roles in single use of db context
+        IList<string> bearerRoles = await _userManager.GetRolesAsync(bearer);
+
+        // Retrieve all reflections and only provide those for all users when role is Admin
+        serviceResponse.Data = bearerRoles.Contains("Admin") ?
+          await _db.Reflections
            .Include(r => r.Comment)
            .Include(r => r.Children)
            .Select(r => _mapper.Map<GetReflectionDto>(r))
-           .ToListAsync();
-        serviceResponse.Messages.Add("Successfully retrieved all reflections from every user");
+           .ToListAsync()
+          : bearerRoles.Contains("Participant") ?
+          await _db.Reflections
+           .Include(r => r.Comment)
+           .Include(r => r.Children)
+           .Where(r => r.User.Id == bearerId)
+           .Select(r => _mapper.Map<GetReflectionDto>(r))
+           .ToListAsync()
+          : null;
+        serviceResponse.Messages.Add("Successfully retrieved all reflections.");
 
         // Add mapped User, Child, and List<Emotion> entities to each ReflectionChild returned in service response data
         foreach (GetReflectionDto reflection in serviceResponse.Data)
@@ -201,39 +183,49 @@ namespace PhenomenologicalStudy.API.Services
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    public async Task<ServiceResponse<GetUserReflectionDto>> GetReflectionById(Guid id)
+    public async Task<ServiceResponse<GetReflectionDto>> GetReflectionById(Guid id)
     {
-      ServiceResponse<GetUserReflectionDto> serviceResponse = new();
-      serviceResponse.Data = _mapper.Map<GetUserReflectionDto>(await _db.Reflections
-        .Include(r => r.Capture)
-        .Include(r => r.Comment)
-        .Include(r => r.Children)
-        .FirstOrDefaultAsync(c => c.Id == id));
-
-      // Add mapped Child and List<Emotion> entities to ReflectionChild returned in service response data
-      await RetrieveReflectionChildAndEmotions(serviceResponse.Data.Children);
-
-      await _db.SaveChangesAsync();
-      return serviceResponse;
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="reflection"></param>
-    /// <returns></returns>
-    private async Task RetrieveReflectionChildAndEmotions(ICollection<GetReflectionChildDto> children)
-    {
-      foreach (var reflectionChild in children)
+      ServiceResponse<GetReflectionDto> serviceResponse = new();
+      try
       {
-        // Retrieve child and emotion
-        GetChildDto child = _mapper.Map<GetChildDto>(await _db.Children.FirstOrDefaultAsync(c => c.ReflectionChild.Id == reflectionChild.Id));
-        ICollection<GetEmotionDto> emotions = _mapper.Map<List<GetEmotionDto>>(await _db.Emotions.Where(e => e.ReflectionChild.Id == reflectionChild.Id).ToListAsync());
+        // Attempt to retrieve the reflection and check if not found
+        Reflection reflection = await _db.Reflections
+          .Include(r => r.Capture)
+          .Include(r => r.Comment)
+          .Include(r => r.Children)
+          .FirstOrDefaultAsync(c => c.Id == id);
+        if (reflection == null)
+        {
+          serviceResponse.Status = HttpStatusCode.NotFound;
+          serviceResponse.Messages.Add("Reflection not found.");
+          serviceResponse.Success = false;
+        }
 
-        // Assign child and emotion to ReflectionChild entity
-        reflectionChild.Emotions = emotions;
-        reflectionChild.Child = child;
+        // Map reflection to DTO and assign to service response data
+        serviceResponse.Data = _mapper.Map<GetReflectionDto>(reflection);
+
+        // Add mapped Child and List<Emotion> entities to ReflectionChild in service response data
+        foreach (var reflectionChild in serviceResponse.Data.Children)
+        {
+          // Retrieve child and emotion
+          GetChildDto child = _mapper.Map<GetChildDto>(await _db.Children.FirstOrDefaultAsync(c => c.ReflectionChild.Id == reflectionChild.Id));
+          ICollection<GetEmotionDto> emotions = _mapper.Map<List<GetEmotionDto>>(await _db.Emotions.Where(e => e.ReflectionChild.Id == reflectionChild.Id).ToListAsync());
+
+          // Assign child and emotion to ReflectionChild entity
+          reflectionChild.Emotions = emotions;
+          reflectionChild.Child = child;
+        }
+        await _db.SaveChangesAsync();
+        serviceResponse.Messages.Add($"Retreived relfection with id {id} successfully.");
       }
+      catch (Exception ex)
+      {
+        serviceResponse.Status = HttpStatusCode.InternalServerError;
+        serviceResponse.Messages.Add(ex.Message);
+        serviceResponse.Success = false;
+      }
+      
+      return serviceResponse;
     }
 
     /// <summary>
@@ -243,15 +235,26 @@ namespace PhenomenologicalStudy.API.Services
     /// <returns></returns>
     public async Task<ServiceResponse<Guid>> PostReflection(AddReflectionStringDataDto reflection)
     {
+      ServiceResponse<Guid> serviceResponse = new();
       try
       {
-        ServiceResponse<Guid> serviceResponse = new();
+        // Retrieve user from bearer's userId claim
+        Guid bearerId = _authService.GetUserId();
+        User bearer = await _userManager.FindByIdAsync(bearerId.ToString());
+
+        // Check if user exists
+        if (bearer == null)
+        {
+          serviceResponse.Success = false;
+          serviceResponse.Messages.Add("Unauthorized.");
+          serviceResponse.Status = HttpStatusCode.Unauthorized;
+          return serviceResponse;
+        }
 
         // Convert DTO with string capture data and convert into bytes
         AddReflectionByteDataDto reflectionAsBytes = new()
         {
-          Capture = new AddCaptureDto() { Data = Encoding.UTF8.GetBytes(reflection.Capture.Data) },
-          CreationTime = DateTimeOffset.UtcNow
+          Capture = new AddCaptureDto() { Data = Encoding.UTF8.GetBytes(reflection.Capture.Data) }
         };
 
         // Map reflection and assign User as bearer retrieved from HttpContext via GetUserId()
@@ -264,17 +267,15 @@ namespace PhenomenologicalStudy.API.Services
 
         // Retrieve reflection using automapper
         serviceResponse.Data = addedReflection.Entity.Id;
-        return serviceResponse;
+        
       }
       catch (Exception ex)
       {
-        return new ServiceResponse<Guid>()
-        {
-          Status = HttpStatusCode.InternalServerError,
-          Messages = new List<string>() { ex.Message },
-          Success = false
-        };
+        serviceResponse.Status = HttpStatusCode.InternalServerError;
+        serviceResponse.Messages.Add(ex.Message);
+        serviceResponse.Success = false;
       }
+      return serviceResponse;
     }
 
     /// <summary>
@@ -282,37 +283,57 @@ namespace PhenomenologicalStudy.API.Services
     /// </summary>
     /// <param name="reflectionChild"></param>
     /// <returns></returns>
-    public async Task<ServiceResponse<Guid>> PostReflectionChildEmotion(AddReflectionChildEmotionDto reflectionChild)
+    public async Task<ServiceResponse<Guid>> PostReflectionChildEmotion(Guid reflectionId, AddReflectionChildEmotionDto reflectionChild)
     {
       ServiceResponse<Guid> serviceResponse = new();
       try
       {
         // --- Retrieve Reflection and Child
-        Reflection reflection = await _db.Reflections.FindAsync(reflectionChild.ReflectionId);
+        Reflection reflection = await _db.Reflections.FindAsync(reflectionId);
         Child child = await _db.Children.FindAsync(reflectionChild.ChildId);
+
+        // Check if either reflection or child is not found
+        if (reflection == null)
+        {
+          serviceResponse.Success = false;
+          serviceResponse.Messages.Add("Reflection not found.");
+          serviceResponse.Status = HttpStatusCode.NotFound;
+          return serviceResponse;
+        }
+        if (reflection == null)
+        {
+          serviceResponse.Success = false;
+          serviceResponse.Messages.Add("Child not found.");
+          serviceResponse.Status = HttpStatusCode.NotFound;
+          return serviceResponse;
+        }
 
         // --- Retrieve ReflectionChild for retrieved Reflection and Child.
         ReflectionChild retrievedReflectionChild = await _db.ReflectionChildren
           .Include(r => r.Emotions)
-          .FirstOrDefaultAsync(rc => rc.Reflection.Id == reflectionChild.ReflectionId && rc.ChildId == reflectionChild.ChildId);
+          .FirstOrDefaultAsync(rc => rc.Reflection.Id == reflectionId && rc.ChildId == reflectionChild.ChildId);
 
-        // -- Check for duplicate Emotion for this ReflectionChild
+        // -- Check for non-duplicate Emotion for this ReflectionChild
         Emotion duplicate = await _db.Emotions.FirstOrDefaultAsync(e => e.Type == reflectionChild.Emotion.Type);
-        if (duplicate == null)
-        {
-          // --- Create Emotion for newly added ReflectionChild
-          EntityEntry<Emotion> emotion = await _db.Emotions.AddAsync(new Emotion() { Type = reflectionChild.Emotion.Type, Intensity = reflectionChild.Emotion.Intensity, ReflectionChild = retrievedReflectionChild });
-          await _db.SaveChangesAsync();
-
-          // Retrieve reflection using automapper
-          serviceResponse.Data = emotion.Entity.Id;
-        }
-        else
-        {
+        if (duplicate != null)
+        { 
           serviceResponse.Success = false;
           serviceResponse.Messages.Add("Emotion already exists.");
           serviceResponse.Status = HttpStatusCode.Conflict;
+          return serviceResponse;
         }
+
+        // --- Create Emotion for newly added ReflectionChild
+        EntityEntry<Emotion> emotion = await _db.Emotions.AddAsync(new Emotion()
+        {
+          Type = reflectionChild.Emotion.Type,
+          Intensity = reflectionChild.Emotion.Intensity,
+          ReflectionChild = retrievedReflectionChild
+        });
+        await _db.SaveChangesAsync();
+
+        // Map emotion to service data.
+        serviceResponse.Data = emotion.Entity.Id;
       }
       catch (Exception ex)
       {
@@ -358,6 +379,7 @@ namespace PhenomenologicalStudy.API.Services
       {
         serviceResponse.Success = false;
         serviceResponse.Messages.Add(ex.Message);
+        serviceResponse.Status = HttpStatusCode.InternalServerError;
       }
       return serviceResponse;
     }
@@ -368,13 +390,21 @@ namespace PhenomenologicalStudy.API.Services
     /// <returns></returns>
     public async Task<ServiceResponse<List<GetCaptureDto>>> GetReflectionCaptures()
     {
-      return new ServiceResponse<List<GetCaptureDto>> 
-      { 
-        Data = await _db.Captures
+      ServiceResponse<List<GetCaptureDto>> serviceResponse = new();
+      try
+      {
+        serviceResponse.Data = await _db.Captures
           .Include(c => c.Reflection)
           .Select(c => _mapper.Map<GetCaptureDto>(c))
-          .ToListAsync()
-      };
+          .ToListAsync();
+      }
+      catch (Exception ex)
+      {
+        serviceResponse.Success = false;
+        serviceResponse.Messages.Add(ex.Message);
+        serviceResponse.Status = HttpStatusCode.InternalServerError;
+      }
+      return serviceResponse;
     }
 
     /// <summary>
@@ -384,12 +414,20 @@ namespace PhenomenologicalStudy.API.Services
     /// <returns></returns>
     public async Task<ServiceResponse<GetCaptureDto>> GetReflectionCaptureById(Guid id)
     {
-      return new ServiceResponse<GetCaptureDto>
+      ServiceResponse<GetCaptureDto> serviceResponse = new();
+      try
       {
-        Data = _mapper.Map<GetCaptureDto>(await _db.Captures
+        serviceResponse.Data = _mapper.Map<GetCaptureDto>(await _db.Captures
           .Include(c => c.Reflection)
-          .FirstOrDefaultAsync(c => c.Id == id))
-      };
+          .FirstOrDefaultAsync(c => c.Id == c.Reflection.Id));
+      }
+      catch (Exception ex)
+      {
+        serviceResponse.Success = false;
+        serviceResponse.Messages.Add(ex.Message);
+        serviceResponse.Status = HttpStatusCode.InternalServerError;
+      }
+      return serviceResponse;
     }
 
     /// <summary>

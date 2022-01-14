@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using PhenomenologicalStudy.API.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -38,12 +37,7 @@ namespace PhenomenologicalStudy.API.Controllers
       {
         HttpStatusCode.BadRequest => BadRequest(registerResponse),
         HttpStatusCode.OK => Ok(registerResponse),
-        _ => BadRequest(new ServiceResponse<Guid>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)HttpStatusCode.InternalServerError,(registerResponse))
       };
     }
 
@@ -56,7 +50,7 @@ namespace PhenomenologicalStudy.API.Controllers
     [HttpGet]
     [AllowAnonymous]
     [Route("ConfirmEmail")]
-    public async Task<ServiceResponse<AuthenticationTokens>> ConfirmEmail([FromQuery]string userId, [FromQuery] string code)
+    public async Task<ServiceResponse<RefreshTokenDto>> ConfirmEmail([FromQuery]string userId, [FromQuery] string code)
     {
       return await _authService.ConfirmEmail(userId, code);
     }
@@ -69,21 +63,16 @@ namespace PhenomenologicalStudy.API.Controllers
     [HttpPost]
     [AllowAnonymous]
     [Route("Login")]
-    public async Task<ActionResult<ServiceResponse<AuthenticationTokens>>> Login(LoginUserDto user)
+    public async Task<ActionResult<ServiceResponse<RefreshTokenDto>>> Login(LoginUserDto user)
     {
-      ServiceResponse<AuthenticationTokens> loginResponse = await _authService.Login(user);
+      ServiceResponse<RefreshTokenDto> loginResponse = await _authService.Login(user);
       return loginResponse.Status switch
       {
         HttpStatusCode.OK => Ok(loginResponse),
         HttpStatusCode.NotFound => NotFound(loginResponse),
         HttpStatusCode.BadRequest => BadRequest(loginResponse),
         HttpStatusCode.Created => StatusCode((int)HttpStatusCode.Created, loginResponse),
-        _ => BadRequest(new ServiceResponse<AuthenticationTokens>()
-        {
-          Messages = new List<string>() { "Invalid payload" },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)HttpStatusCode.InternalServerError, (loginResponse))
       };
     }
 
@@ -94,19 +83,14 @@ namespace PhenomenologicalStudy.API.Controllers
     /// <returns></returns>
     [HttpPost]
     [Route("Logout")]
-    public async Task<ActionResult<ServiceResponse<AuthenticationTokens>>> Logout(AuthenticationTokens tokens)
+    public async Task<ActionResult<ServiceResponse<Guid>>> Logout(AuthenticationTokensDto tokens)
     {
-      ServiceResponse<AuthenticationTokens> loginResponse = await _authService.Logout(tokens);
-      return loginResponse.Status switch
+      ServiceResponse<Guid> logoutResponse = await _authService.Logout(tokens);
+      return logoutResponse.Status switch
       {
-        HttpStatusCode.OK => Ok(loginResponse),
-        HttpStatusCode.NotFound => NotFound(loginResponse),
-        _ => BadRequest(new ServiceResponse<AuthenticationTokens>()
-        {
-          Messages = new List<string>() { "Invalid payload" },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        HttpStatusCode.OK => Ok(logoutResponse),
+        HttpStatusCode.NotFound => NotFound(logoutResponse),
+        _ => StatusCode((int)HttpStatusCode.InternalServerError, (logoutResponse))
       };
     }
 
@@ -117,7 +101,7 @@ namespace PhenomenologicalStudy.API.Controllers
     /// <returns>BadRequest if Jwt canot be refreshed, otherwise refreshed Jwt</returns>
     [HttpPost]
     [Route("RefreshToken")]
-    public async Task<ActionResult<ServiceResponse<AuthenticationTokens>>> RefreshToken(AuthenticationTokens tokens)
+    public async Task<ActionResult<ServiceResponse<RefreshTokenDto>>> RefreshToken(AuthenticationTokensDto tokens)
     {
       var refreshTokenResponse = await _authService.RefreshToken(tokens);
       return refreshTokenResponse.Status switch
@@ -129,12 +113,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.Forbidden => StatusCode((int)HttpStatusCode.Forbidden, refreshTokenResponse),
         HttpStatusCode.Gone => StatusCode((int)HttpStatusCode.Gone, refreshTokenResponse),
         HttpStatusCode.Conflict => StatusCode((int)HttpStatusCode.Conflict, refreshTokenResponse),
-        _ => BadRequest(new ServiceResponse<AuthenticationTokens>()
-        {
-          Messages = new List<string>() { "Invalid payload" },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)HttpStatusCode.InternalServerError, (refreshTokenResponse))
       };
     }
   }

@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using PhenomenologicalStudy.API.Data;
 using PhenomenologicalStudy.API.Models;
 using PhenomenologicalStudy.API.Models.DataTransferObjects;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Child;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Emotion;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Questionnaire;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Reflection;
 using PhenomenologicalStudy.API.Models.DataTransferObjects.User;
 using PhenomenologicalStudy.API.Services.Interfaces;
 using System;
@@ -33,10 +37,10 @@ namespace PhenomenologicalStudy.API.Services
     }
 
     /// <summary>
-    /// 
+    /// Service logic for UsersController endpoint 'DELETE: /api/Users/{id}'.
     /// </summary>
     /// <param name="id"></param>
-    /// <returns></returns>
+    /// <returns>Service response as a User Data Transfer Object.</returns>
     public async Task<ServiceResponse<GetUserDto>> DeleteUserById(Guid id)
     {
       ServiceResponse<GetUserDto> serviceResponse = new();
@@ -73,8 +77,8 @@ namespace PhenomenologicalStudy.API.Services
           : null;
 
 
-        // Check if user is found.
-        if (user != null)
+        // Check if user not found.
+        if (user == null)
         {
           serviceResponse.Success = false;
           serviceResponse.Status = HttpStatusCode.NotFound;
@@ -98,10 +102,10 @@ namespace PhenomenologicalStudy.API.Services
     }
 
     /// <summary>
-    /// 
+    /// Service logic for UsersController endpoint 'GET: /api/Users/{id}'.
     /// </summary>
     /// <param name="id"></param>
-    /// <returns></returns>
+    /// <returns>Service response as a User Data Transfer Object.</returns>
     public async Task<ServiceResponse<GetUserDto>> GetUserById(Guid id)
     {
       ServiceResponse<GetUserDto> serviceResponse = new();
@@ -153,6 +157,117 @@ namespace PhenomenologicalStudy.API.Services
     }
 
     /// <summary>
+    /// Service logic for UsersController endpoint 'GET: /api/Users/Questionnaires'.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public async Task<ServiceResponse<List<GetQuestionnaireDto>>> GetUserQuestionnaires(Guid? id)
+    {
+      ServiceResponse<List<GetQuestionnaireDto>> serviceResponse = new();
+      try
+      {
+        // Check if the user exists
+        User user = await _userManager.FindByIdAsync(id.ToString());
+        if (user == null)
+        {
+          serviceResponse.Success = false;
+          serviceResponse.Messages.Add($"User with id {id} not found.");
+          serviceResponse.Status = HttpStatusCode.NotFound;
+          return serviceResponse;
+        }
+
+        // Get all Questionnaires for a specific user.
+        serviceResponse.Data = id == null ?
+          await _db.Questionnaires
+            .Include(q => q.User)
+            .Select(q => _mapper.Map<GetQuestionnaireDto>(q))
+            .ToListAsync()
+          : await _db.Questionnaires
+            .Include(q => q.User)
+            .Where(q => q.User.Id == id)
+            .Select(q => _mapper.Map<GetQuestionnaireDto>(q))
+            .ToListAsync();
+        serviceResponse.Messages.Add($"Successfully retrieved all questionnaires for user with id {id}");
+      }
+      catch (Exception ex)
+      {
+        serviceResponse.Success = false;
+        serviceResponse.Status = HttpStatusCode.InternalServerError;
+        serviceResponse.Messages.Add(ex.Message);
+      }
+      return serviceResponse;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public async Task<ServiceResponse<List<GetReflectionDto>>> GetUserReflections(Guid? id)
+    {
+      ServiceResponse<List<GetReflectionDto>> serviceResponse = new();
+      try
+      {
+        // Check if the user exists
+        User user = await _userManager.FindByIdAsync(id.ToString());
+        if (user == null)
+        {
+          serviceResponse.Success = false;
+          serviceResponse.Messages.Add($"User with id {id} not found.");
+          serviceResponse.Status = HttpStatusCode.NotFound;
+          return serviceResponse;
+        }
+
+        // Get all reflections and included data for a specific user.
+        List<GetReflectionDto> reflections = id == null ?
+          await _db.Reflections
+          .Include(r => r.User)
+          .Include(r => r.Capture)
+          .Include(r => r.Children)
+          .Include(r => r.Comment)
+          .Select(r => _mapper.Map<GetReflectionDto>(r))
+          .ToListAsync()
+        : await _db.Reflections
+          .Include(r => r.User)
+          .Include(r => r.Capture)
+          .Include(r => r.Children)
+          .Include(r => r.Comment)
+          .Where(r => r.User.Id == id)
+          .Select(r => _mapper.Map<GetReflectionDto>(r))
+          .ToListAsync();
+
+
+        // Add mapped User, Child, and List<Emotion> entities to each ReflectionChild returned in service response data
+        foreach (GetReflectionDto reflection in reflections)
+        {
+          // Use reflection Id to recover user Id
+          Reflection userReflection = await _db.Reflections.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == reflection.Id);
+          reflection.User = _mapper.Map<GetUserDto>(await _db.Users.FirstOrDefaultAsync(u => u.Id == userReflection.User.Id));
+          foreach (var reflectionChild in reflection.Children)
+          {
+            // Retrieve child and emotion
+            GetChildDto child = _mapper.Map<GetChildDto>(await _db.Children.FirstOrDefaultAsync(c => c.ReflectionChild.Id == reflectionChild.Id));
+            ICollection<GetEmotionDto> emotions = _mapper.Map<List<GetEmotionDto>>(await _db.Emotions.Where(e => e.ReflectionChild.Id == reflectionChild.Id).ToListAsync());
+
+            // Assign child and emotion to ReflectionChild entity
+            reflectionChild.Emotions = emotions;
+            reflectionChild.Child = child;
+          }
+        }
+        await _db.SaveChangesAsync();
+        serviceResponse.Data = reflections;
+        serviceResponse.Messages.Add($"Successfully retrieved all reflections for user with id {id}");
+      }
+      catch (Exception ex)
+      {
+        serviceResponse.Success = false;
+        serviceResponse.Status = HttpStatusCode.InternalServerError;
+        serviceResponse.Messages.Add(ex.Message);
+      }
+      return serviceResponse;
+    }
+
+    /// <summary>
     /// 
     /// </summary>
     /// <param name="id"></param>
@@ -182,7 +297,29 @@ namespace PhenomenologicalStudy.API.Services
         List<Role> retrievedRoles = new();
         if (bearerRoles.Contains("Admin"))
         {
-          retrievedRoles = await _db.Roles.ToListAsync();
+          // Whenever a user id is provided in query string params, attempt to find user and check if not found
+          if (id != null)
+          {
+            User user = await _userManager.FindByIdAsync(id.ToString());
+            if (user == null)
+            {
+              serviceResponse.Success = false;
+              serviceResponse.Messages.Add($"User with id {id} not found.");
+              serviceResponse.Status = HttpStatusCode.NotFound;
+              return serviceResponse;
+            }
+
+            // Only retrieve roles for the user with id provided
+            IList<string> iListRoles = await _userManager.GetRolesAsync(user);
+            foreach (string roleName in iListRoles)
+            {
+              retrievedRoles.Add(await _roleManager.FindByNameAsync(roleName));
+            }
+          }
+          else
+          {
+            retrievedRoles = await _db.Roles.ToListAsync();
+          }
         }
         // Check that bearer is Participant to retrieve only their roles
         else if (bearerRoles.Contains("Participant"))

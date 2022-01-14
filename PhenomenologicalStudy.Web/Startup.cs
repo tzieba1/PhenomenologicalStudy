@@ -1,20 +1,15 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PhenomenologicalStudy.API.Models;
 using PhenomenologicalStudy.API.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using PhenomenologicalStudy.API.Services;
+using PhenomenologicalStudy.API.Configuration;
 
 namespace PhenomenologicalStudy.Web
 {
@@ -35,8 +30,7 @@ namespace PhenomenologicalStudy.Web
       services.Configure<EmailSenderOptions>(Configuration.GetSection("EmailSenderOptions"));
 
       services.AddDbContext<PhenomenologicalStudyContext>(options =>
-          options.UseSqlServer(
-              Configuration.GetConnectionString("DefaultConnection")));
+          options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
       services.AddDatabaseDeveloperPageExceptionFilter();
       services.AddIdentity<User, Role>(options => options.SignIn.RequireConfirmedAccount = true)
           .AddEntityFrameworkStores<PhenomenologicalStudyContext>()
@@ -56,7 +50,7 @@ namespace PhenomenologicalStudy.Web
       }
       else
       {
-        app.UseExceptionHandler("/Error");
+        app.UseExceptionHandler("/Home/Error");
         // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
         app.UseHsts();
       }
@@ -72,6 +66,9 @@ namespace PhenomenologicalStudy.Web
       app.UseEndpoints(endpoints =>
       {
         endpoints.MapRazorPages();
+        endpoints.MapControllerRoute(
+          name: "default",
+          pattern: "{controller=Home}/{action=Index}/{id?}");
       });
     }
   }

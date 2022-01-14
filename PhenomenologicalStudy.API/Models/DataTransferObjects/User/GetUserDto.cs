@@ -1,10 +1,6 @@
-﻿using PhenomenologicalStudy.API.Models.DataTransferObjects.Child;
-using PhenomenologicalStudy.API.Models.DataTransferObjects.Reflection;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace PhenomenologicalStudy.API.Models.DataTransferObjects.User
 {
@@ -18,7 +14,6 @@ namespace PhenomenologicalStudy.API.Models.DataTransferObjects.User
     [DataType(DataType.Date)]
     public DateTimeOffset BirthDate { get; set; }
     public byte[] ProfilePicture { get; set; }
-    public string Role { get; set; }
-    public ICollection<RefreshToken> RefreshTokens { get; set; }
+    public IList<string> Roles { get; set; }
   }
 }

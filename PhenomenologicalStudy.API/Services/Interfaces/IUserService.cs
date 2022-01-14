@@ -1,4 +1,6 @@
 ﻿using PhenomenologicalStudy.API.Models.DataTransferObjects;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Questionnaire;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Reflection;
 using PhenomenologicalStudy.API.Models.DataTransferObjects.User;
 using System;
 using System.Collections.Generic;
@@ -15,5 +17,7 @@ namespace PhenomenologicalStudy.API.Services.Interfaces
     Task<ServiceResponse<List<GetUserDto>>> GetUsers();
     Task<ServiceResponse<List<GetUserRoleDto>>> GetUserRoles(Guid? id);
     Task<ServiceResponse<List<GetUserRoleDto>>> PostUserRole(AddUserRoleDto role);
+    Task<ServiceResponse<List<GetReflectionDto>>> GetUserReflections(Guid? id);
+    Task<ServiceResponse<List<GetQuestionnaireDto>>> GetUserQuestionnaires(Guid? id);
   }
 }

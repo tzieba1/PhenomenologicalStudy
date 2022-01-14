@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -31,13 +33,18 @@ namespace PhenomenologicalStudy.API.Services
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IEmailSender _emailSender;
     private readonly ILogger<AuthService> _logger;
-    public AuthService(PhenomenologicalStudyContext db, 
+    private readonly IMapper _mapper;
+    private readonly RoleManager<Role> _roleManager;
+    public AuthService(PhenomenologicalStudyContext db,
                        IConfiguration config, // Includes 'appsettings.json' contents as sections
-                       UserManager<User> userManager, 
+                       UserManager<User> userManager,
                        TokenValidationParameters tokenValidationParams,
                        IHttpContextAccessor httpContextAccessor,
                        IEmailSender emailSender,
-                       ILogger<AuthService> logger)
+                       ILogger<AuthService> logger,
+                       IMapper mapper,
+                       RoleManager<Role> roleManager
+      )
     {
       _userManager = userManager;                                           // Manages users for registration(creation)/login and validation
       _db = db;                                                             // Manages users for registration(creation)/login and validation                             
@@ -46,6 +53,8 @@ namespace PhenomenologicalStudy.API.Services
       _httpContextAccessor = httpContextAccessor;                           // Needed by GetUserId() to retrieve userId claim from JWT
       _emailSender = emailSender;                                           // For registration confirmation emails
       _logger = logger;                                                     // Generate logs for this controller
+      _mapper = mapper;
+      _roleManager = roleManager;
     }
 
     /// <summary>
@@ -53,7 +62,7 @@ namespace PhenomenologicalStudy.API.Services
     /// </summary>
     /// <param name="user"></param>
     /// <returns></returns>
-    public async Task<ServiceResponse<AuthenticationTokens>> Login(LoginUserDto user)
+    public async Task<ServiceResponse<RefreshTokenDto>> Login(LoginUserDto user)
     {
       try
       {
@@ -61,7 +70,7 @@ namespace PhenomenologicalStudy.API.Services
         // Check user exists
         if (existingUser == null)
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Messages = new List<string>() { "User not found." },
             Status = HttpStatusCode.NotFound,
@@ -72,7 +81,7 @@ namespace PhenomenologicalStudy.API.Services
         // Check user has not confirmed their email
         if (!existingUser.EmailConfirmed)
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Messages = new List<string>() { "Email has not been confirmed." },
             Status = HttpStatusCode.NotFound,
@@ -83,7 +92,7 @@ namespace PhenomenologicalStudy.API.Services
         // Check password matches after hash/salt/encryption
         if (!(await _userManager.CheckPasswordAsync(existingUser, user.Password)))
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Messages = new List<string>() { "Invalid password" },
             Status = HttpStatusCode.BadRequest,
@@ -95,7 +104,7 @@ namespace PhenomenologicalStudy.API.Services
       }
       catch (Exception ex)
       {
-        return new ServiceResponse<AuthenticationTokens>()
+        return new ServiceResponse<RefreshTokenDto>()
         {
           Messages = new List<string>() { ex.Message },
           Status = HttpStatusCode.InternalServerError,
@@ -109,9 +118,9 @@ namespace PhenomenologicalStudy.API.Services
     /// </summary>
     /// <param name="tokens"></param>
     /// <returns></returns>
-    public async Task<ServiceResponse<AuthenticationTokens>> Logout(AuthenticationTokens tokens)
+    public async Task<ServiceResponse<Guid>> Logout(AuthenticationTokensDto tokens)
     {
-      ServiceResponse<AuthenticationTokens> serviceResponse = new();
+      ServiceResponse<Guid> serviceResponse = new();
 
       // Attempt to find refresh token of user to logout so it can be revoked
       RefreshToken refreshToken = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == tokens.RefreshJwt);
@@ -129,6 +138,7 @@ namespace PhenomenologicalStudy.API.Services
       refreshToken.IsRevoked = true;
       await _db.SaveChangesAsync();
       serviceResponse.Messages.Add($"Successfully logged out user with id {refreshToken.UserId}");
+      serviceResponse.Data = refreshToken.UserId;
       return serviceResponse;
     }
 
@@ -194,8 +204,7 @@ namespace PhenomenologicalStudy.API.Services
           var urlBuilder = new UriBuilder()
           {
             Scheme = "https",
-            Host = "localhost",
-            Port = 5001,
+            Host = "psappservice.azurewebsites.net",
             Path = "/api/Authentication/ConfirmEmail",
             Query = $"?userId={registeredUser.Id}&code={code}"
           };
@@ -207,13 +216,13 @@ namespace PhenomenologicalStudy.API.Services
           {
             return new ServiceResponse<Guid>()
             {
-              Messages = new List<string>() { $"Email sent to \"{newUser.Email}\" with a coded confirmation link (check spam folder)." }
+              Messages = new List<string>() { $"Email sent to '{newUser.Email}' with a coded confirmation link (check spam folder)." }
             };
           }
           else
             return new ServiceResponse<Guid>()
             {
-              Messages = new List<string>() { $"Email address \"{newUser.Email}\" automatically confirmed." }
+              Messages = new List<string>() { $"Email address '{newUser.Email}' automatically confirmed." }
             };
         }
       }
@@ -234,13 +243,13 @@ namespace PhenomenologicalStudy.API.Services
     /// <param name="userId"></param>
     /// <param name="code"></param>
     /// <returns></returns>
-    public async Task<ServiceResponse<AuthenticationTokens>> ConfirmEmail(string userId, string code)
+    public async Task<ServiceResponse<RefreshTokenDto>> ConfirmEmail(string userId, string code)
     {
       try
       {
         if (userId == null || code == null)
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Messages = new List<string>() { "Invalid email confirmation request." },
             Success = false,
@@ -251,7 +260,7 @@ namespace PhenomenologicalStudy.API.Services
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Messages = new List<string>() { $"Unable to load user with ID '{userId}'." },
             Success = false,
@@ -267,7 +276,7 @@ namespace PhenomenologicalStudy.API.Services
       }
       catch (Exception ex)
       {
-        return new ServiceResponse<AuthenticationTokens>()
+        return new ServiceResponse<RefreshTokenDto>()
         {
           Messages = new List<string>() { ex.Message },
           Status = HttpStatusCode.InternalServerError,
@@ -281,14 +290,14 @@ namespace PhenomenologicalStudy.API.Services
     /// </summary>
     /// <param name="tokens"></param>
     /// <returns></returns>
-    public async Task<ServiceResponse<AuthenticationTokens>> RefreshToken(AuthenticationTokens tokens)
+    public async Task<ServiceResponse<RefreshTokenDto>> RefreshToken(AuthenticationTokensDto tokens)
     {
       try
       {
-        ServiceResponse<AuthenticationTokens> result = await ValidateAndGenerateAuthenticationTokens(tokens);
+        ServiceResponse<RefreshTokenDto> result = await ValidateAndGenerateAuthenticationTokens(tokens);
         if (result == null)
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Messages = new List<string>() { "Invalid tokens." },
             Success = false,
@@ -299,7 +308,7 @@ namespace PhenomenologicalStudy.API.Services
       }
       catch (Exception ex)
       {
-        return new ServiceResponse<AuthenticationTokens>()
+        return new ServiceResponse<RefreshTokenDto>()
         {
           Messages = new List<string>() { ex.Message },
           Status = HttpStatusCode.InternalServerError,
@@ -313,7 +322,7 @@ namespace PhenomenologicalStudy.API.Services
     /// </summary>
     /// <param name="user"></param>
     /// <returns></returns>
-    public async Task<ServiceResponse<AuthenticationTokens>> GenerateJwt(User user)
+    public async Task<ServiceResponse<RefreshTokenDto>> GenerateJwt(User user)
     {
       try
       {
@@ -321,7 +330,8 @@ namespace PhenomenologicalStudy.API.Services
         byte[] key = Encoding.UTF8.GetBytes(_jwtConfig.PrivateKey);
 
         // Establish claims for JWTs.
-        List<Claim> claims = new() {
+        List<Claim> claims = new()
+        {
           new Claim("UserId", user.Id.ToString()),
           new Claim(JwtRegisteredClaimNames.Email, user.Email),             // Email claim of user generating Jwt
           new Claim(JwtRegisteredClaimNames.Sub, user.FirstName),           // Sub claim identifies principal Subject of the JWT
@@ -362,23 +372,24 @@ namespace PhenomenologicalStudy.API.Services
         };
 
         // Save refreshToken to database
-        await _db.RefreshTokens.AddAsync(refreshToken);
+        EntityEntry<RefreshToken> addedRefreshToken = await _db.RefreshTokens.AddAsync(refreshToken);
         await _db.SaveChangesAsync();
+        RefreshTokenDto tokenDto = _mapper.Map<RefreshTokenDto>(addedRefreshToken.Entity);
+        tokenDto.Jwt = jwtTokenHandler.WriteToken(token);
+        tokenDto.RefreshJwt = refreshToken.Token;
+        tokenDto.User.Roles = await _userManager.GetRolesAsync(user);
 
         //return jwtTokenHandler.WriteToken(token);
-        return new ServiceResponse<AuthenticationTokens>()
+        return new ServiceResponse<RefreshTokenDto>()
         {
-          Data = new AuthenticationTokens()
-          {
-            Jwt = jwtTokenHandler.WriteToken(token),
-            RefreshJwt = refreshToken.Token
-          },
-          Status = HttpStatusCode.Created
+          Data = tokenDto,
+          Status = HttpStatusCode.Created,
+          Messages = new List<string>() { "Successfully generated new tokens." }
         };
       }
       catch (Exception ex)
       {
-        return new ServiceResponse<AuthenticationTokens>()
+        return new ServiceResponse<RefreshTokenDto>()
         {
           Messages = new List<string>() { ex.Message },
           Status = HttpStatusCode.InternalServerError,
@@ -392,7 +403,7 @@ namespace PhenomenologicalStudy.API.Services
     /// </summary>
     /// <param name="token">Token from request body being refreshed.</param>
     /// <returns>Jwt with Token and RefreshToken properties</returns>
-    public async Task<ServiceResponse<AuthenticationTokens>> ValidateAndGenerateAuthenticationTokens(AuthenticationTokens token)
+    public async Task<ServiceResponse<RefreshTokenDto>> ValidateAndGenerateAuthenticationTokens(AuthenticationTokensDto token)
     {
       JwtSecurityTokenHandler jwtTokenHandler = new();  // Handles verification of a Jwt
       try
@@ -405,7 +416,7 @@ namespace PhenomenologicalStudy.API.Services
         {
           if (!jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
           {
-            return new ServiceResponse<AuthenticationTokens>()
+            return new ServiceResponse<RefreshTokenDto>()
             {
               Success = false,
               Messages = new List<string>() { "Unauthorized." },  // Do not mention algorithm used.
@@ -415,13 +426,15 @@ namespace PhenomenologicalStudy.API.Services
         }
 
         // Attempt to find stored RefreshToken entry in database with Token matching token.RefreshToken 
-        RefreshToken storedToken = await _db.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token.RefreshJwt);
+        RefreshToken storedToken = await _db.RefreshTokens
+          .Include(rt => rt.User)
+          .FirstOrDefaultAsync(rt => rt.Token == token.RefreshJwt);
 
 
         // 3. Validate that stored RefreshToken exists
         if (storedToken == null)
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Success = false,
             Messages = new List<string>() { "Token does not exist." },
@@ -433,7 +446,7 @@ namespace PhenomenologicalStudy.API.Services
         string jti = tokenCandidate.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Jti).Value;
         if (storedToken.JwtId.ToString() != jti)
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Success = false,
             Messages = new List<string>() { "Token does not match." },
@@ -444,7 +457,7 @@ namespace PhenomenologicalStudy.API.Services
         // 5. Validate that stored RefreshToken has not been revoked
         if (storedToken.IsRevoked)
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Success = false,
             Messages = new List<string>() { "Token has been revoked." },
@@ -455,7 +468,7 @@ namespace PhenomenologicalStudy.API.Services
         // 6. Validate that stored RefreshToken has not been used
         if (storedToken.IsUsed)
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Success = false,
             Messages = new List<string>() { "Token has been used." },
@@ -468,14 +481,14 @@ namespace PhenomenologicalStudy.API.Services
         DateTimeOffset expiryDate = UnixTimeStampToDateTime(utcExpiryDate);
         if (expiryDate > DateTime.UtcNow)
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Success = false,
             Messages = new List<string>() { "Token has not expired." },
             Status = HttpStatusCode.OK,
-            Data = token
+            Data = _mapper.Map<RefreshTokenDto>(storedToken)
           };
-        }               
+        }
 
         storedToken.IsUsed = true;              // Set stored RefreshToken as used
         _db.RefreshTokens.Update(storedToken);  // Update stored RefreshToken
@@ -488,7 +501,7 @@ namespace PhenomenologicalStudy.API.Services
       {
         if (ex.Message.Contains("Lifetime validation failed. The token is expired."))
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Success = false,
             Messages = new List<string>() { "Token has expired please login again." },
@@ -497,7 +510,7 @@ namespace PhenomenologicalStudy.API.Services
         }
         else
         {
-          return new ServiceResponse<AuthenticationTokens>()
+          return new ServiceResponse<RefreshTokenDto>()
           {
             Success = false,
             Messages = new List<string>() { "Something went wrong." },

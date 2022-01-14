@@ -23,6 +23,8 @@ namespace PhenomenologicalStudy.API.Models
 
     public ICollection<Child> Children { get; set; }  // Child *...1 User
     public ICollection<Reflection> Reflections { get; set; }  // Reflection *...1 User
+    public ICollection<Badge> Badges { get; set; }  // Questionnaires *...1 User
+    public ICollection<PRFQuestionnaire> Questionnaires { get; set; }  // Questionnaires *...1 User
     public ICollection<RefreshToken> RefreshTokens { get; set; }  // RefreshToken *...1 User
     public DateTimeOffset CreationTime { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedTime { get; set; } = DateTimeOffset.UtcNow;

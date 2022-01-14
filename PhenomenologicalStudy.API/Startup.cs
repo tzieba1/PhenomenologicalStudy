@@ -46,6 +46,8 @@ namespace PhenomenologicalStudy.API
       services.AddScoped<IEmotionService, EmotionService>();          
       services.AddScoped<IUserService, UserService>();    
       services.AddScoped<IChildService, ChildService>();    
+      services.AddScoped<IQuestionnaireService, QuestionnaireService>();    
+      services.AddScoped<IBadgeService, BadgeService>();    
 
       services.AddSingleton(Configuration); // Needed to access secrets from Azure Key Vault
       services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>(); // Retrieve request data from HTTP context (such as claims: NameIdentifier -> User.Id)
@@ -179,8 +181,10 @@ namespace PhenomenologicalStudy.API
         app.UseHsts();
       }
 
+      app.UseSwagger();
+      app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "PhenomenologicalStudy.API v1"));
+      
       app.UseHttpsRedirection();
-
       app.UseRouting();
 
       // Allows cross-origin requests (needed for communicating with this API)

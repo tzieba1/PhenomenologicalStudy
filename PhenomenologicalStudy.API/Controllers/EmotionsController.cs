@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PhenomenologicalStudy.API.Data;
 using PhenomenologicalStudy.API.Models.DataTransferObjects;
 using PhenomenologicalStudy.API.Models.DataTransferObjects.Emotion;
 using PhenomenologicalStudy.API.Services.Interfaces;
@@ -37,12 +36,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.OK => Ok(response),
         HttpStatusCode.Unauthorized => Unauthorized(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetEmotionDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -60,12 +54,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.OK => Ok(response),
         HttpStatusCode.Unauthorized => Unauthorized(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetEmotionDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -85,12 +74,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.Created => StatusCode((int)HttpStatusCode.Created, response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetEmotionDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -110,12 +94,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.Unauthorized => Unauthorized(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetEmotionDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -135,12 +114,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.Created => StatusCode((int)HttpStatusCode.Created, response),
         HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetEmotionDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
   }

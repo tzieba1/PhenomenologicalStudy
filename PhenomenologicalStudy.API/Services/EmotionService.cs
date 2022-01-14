@@ -1,7 +1,5 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PhenomenologicalStudy.API.Data;
@@ -70,7 +68,7 @@ namespace PhenomenologicalStudy.API.Services
           : null;
 
         // Check if emotion is found.
-        if (emotion != null)
+        if (emotion == null)
         {
           serviceResponse.Success = false;
           serviceResponse.Status = HttpStatusCode.NotFound;
@@ -186,7 +184,7 @@ namespace PhenomenologicalStudy.API.Services
 
         // Retrieve either all emotions as admin or only emotions related to user as participant
         List<Emotion> emotions = bearerRoles.Contains("Admin") ?
-          await _db.Emotions.Include(c => c.ReflectionChild)
+          await _db.Emotions.Include(e => e.ReflectionChild)
                             .ToListAsync()
           : bearerRoles.Contains("Participant") ?
           await _db.Emotions.Include(e => e.ReflectionChild)
@@ -250,18 +248,6 @@ namespace PhenomenologicalStudy.API.Services
           serviceResponse.Success = false;
           serviceResponse.Messages.Add($"ReflectionChild with id {reflectionChildId} not found.");
           serviceResponse.Status = HttpStatusCode.NotFound;
-          return serviceResponse;
-        }
-
-        // Retrieve bearer roles in single use of db context
-        IList<string> bearerRoles = await _userManager.GetRolesAsync(bearer);
-
-        // Check if bearer has any roles
-        if (bearerRoles.Count == 0)
-        {
-          serviceResponse.Success = false;
-          serviceResponse.Messages.Add("Unauthorized.");
-          serviceResponse.Status = HttpStatusCode.Unauthorized;
           return serviceResponse;
         }
 

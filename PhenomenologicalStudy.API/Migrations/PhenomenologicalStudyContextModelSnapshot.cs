@@ -16,7 +16,7 @@ namespace PhenomenologicalStudy.API.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Relational:MaxIdentifierLength", 128)
-                .HasAnnotation("ProductVersion", "5.0.11")
+                .HasAnnotation("ProductVersion", "5.0.13")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -118,6 +118,38 @@ namespace PhenomenologicalStudy.API.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Badge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTimeOffset>("CreationTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("UpdatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Value")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Badges");
                 });
 
             modelBuilder.Entity("PhenomenologicalStudy.API.Models.Capture", b =>
@@ -289,6 +321,83 @@ namespace PhenomenologicalStudy.API.Migrations
                     b.HasIndex("ReflectionId");
 
                     b.ToTable("ReflectionChildren");
+                });
+
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.PRFQuestionnaire", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
+
+                    b.Property<DateTimeOffset>("CreationTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Statement1")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement10")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement11")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement12")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement13")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement14")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement15")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement16")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement17")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement18")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement2")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement3")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement4")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement5")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement6")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement7")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement8")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Statement9")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("UpdatedTime")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Questionnaires");
                 });
 
             modelBuilder.Entity("PhenomenologicalStudy.API.Models.Reflection", b =>
@@ -512,6 +621,15 @@ namespace PhenomenologicalStudy.API.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.Badge", b =>
+                {
+                    b.HasOne("PhenomenologicalStudy.API.Models.User", "User")
+                        .WithMany("Badges")
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PhenomenologicalStudy.API.Models.Capture", b =>
                 {
                     b.HasOne("PhenomenologicalStudy.API.Models.Reflection", "Reflection")
@@ -575,6 +693,15 @@ namespace PhenomenologicalStudy.API.Migrations
                     b.Navigation("Reflection");
                 });
 
+            modelBuilder.Entity("PhenomenologicalStudy.API.Models.PRFQuestionnaire", b =>
+                {
+                    b.HasOne("PhenomenologicalStudy.API.Models.User", "User")
+                        .WithMany("Questionnaires")
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PhenomenologicalStudy.API.Models.Reflection", b =>
                 {
                     b.HasOne("PhenomenologicalStudy.API.Models.User", "User")
@@ -616,7 +743,11 @@ namespace PhenomenologicalStudy.API.Migrations
 
             modelBuilder.Entity("PhenomenologicalStudy.API.Models.User", b =>
                 {
+                    b.Navigation("Badges");
+
                     b.Navigation("Children");
+
+                    b.Navigation("Questionnaires");
 
                     b.Navigation("Reflections");
 

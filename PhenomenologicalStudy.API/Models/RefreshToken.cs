@@ -10,6 +10,7 @@ namespace PhenomenologicalStudy.API.Models
   public class RefreshToken
   {
     [Key]
+    [Required]
     public Guid Id { get; set; }
     public string Token { get; set; }
     public Guid JwtId { get; set; }

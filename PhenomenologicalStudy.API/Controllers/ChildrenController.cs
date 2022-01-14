@@ -29,8 +29,8 @@ namespace PhenomenologicalStudy.API.Controllers
     /// <param name="child"></param>
     /// <param name="userId"></param>
     /// <returns></returns>
-    [HttpPut("{userId?}")]
-    public async Task<ActionResult<ServiceResponse<GetChildDto>>> PutChild(UpdateChildDto child)
+    [HttpPut]
+    public async Task<ActionResult<ServiceResponse<GetChildDto>>> PutChild(UpdateChildDto child, [FromQuery] Guid? userId)
     {
       ServiceResponse<GetChildDto> response = await _childService.PutChild(child);
       return response.Status switch
@@ -38,12 +38,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.OK => Ok(response),
         HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.Unauthorized => Unauthorized(response),
-        _ => BadRequest(new ServiceResponse<GetChildDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -62,12 +57,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.Unauthorized => Unauthorized(response),
         HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetChildDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -85,12 +75,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.Unauthorized => Unauthorized(response),
         HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetChildDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -100,8 +85,8 @@ namespace PhenomenologicalStudy.API.Controllers
     /// <param name="child"></param>
     /// <param name="userId"></param>
     /// <returns></returns>
-    [HttpPost("{userId?}")]
-    public async Task<ActionResult<ServiceResponse<Guid>>> PostChild(AddChildDto child, Guid? userId)
+    [HttpPost]
+    public async Task<ActionResult<ServiceResponse<Guid>>> PostChild(AddChildDto child, [FromQuery] Guid? userId)
     {
       ServiceResponse<Guid> response = await _childService.PostChild(child, userId);
       return response.Status switch
@@ -111,12 +96,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.Unauthorized => Unauthorized(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetChildDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -135,12 +115,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.Unauthorized => Unauthorized(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetChildDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
   }

@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using PhenomenologicalStudy.API.Data;
 using PhenomenologicalStudy.API.Models.DataTransferObjects;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Questionnaire;
+using PhenomenologicalStudy.API.Models.DataTransferObjects.Reflection;
 using PhenomenologicalStudy.API.Models.DataTransferObjects.User;
 using PhenomenologicalStudy.API.Services.Interfaces;
 using System;
@@ -36,12 +38,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.OK => Ok(response),
         HttpStatusCode.Unauthorized => Unauthorized(response),
         HttpStatusCode.InternalServerError => BadRequest(response),
-        _ => BadRequest(new ServiceResponse<GetUserDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -58,12 +55,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.OK => Ok(response),
         HttpStatusCode.Unauthorized => Unauthorized(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetUserDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -84,12 +76,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.Created => StatusCode((int)HttpStatusCode.Created, response),
         HttpStatusCode.Conflict => StatusCode((int)HttpStatusCode.Conflict, response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetUserDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -108,12 +95,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.OK => Ok(response),
         HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetUserDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -132,12 +114,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.Created => StatusCode((int)HttpStatusCode.Created, response),
         HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetUserDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
 
@@ -158,12 +135,7 @@ namespace PhenomenologicalStudy.API.Controllers
         HttpStatusCode.Conflict => StatusCode((int)HttpStatusCode.Conflict, response),
         HttpStatusCode.Unauthorized => Unauthorized(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetUserDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
     
@@ -180,13 +152,47 @@ namespace PhenomenologicalStudy.API.Controllers
       {
         HttpStatusCode.OK => Ok(response),
         HttpStatusCode.Unauthorized => Unauthorized(response),
+        HttpStatusCode.NotFound => NotFound(response),
         HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
-        _ => BadRequest(new ServiceResponse<GetUserDto>()
-        {
-          Messages = new List<string>() { "Invalid payload." },
-          Success = false,
-          Status = HttpStatusCode.BadRequest
-        }),
+        _ => StatusCode((int)response.Status, (response))
+      };
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns></returns>
+    [HttpGet("Reflections")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ServiceResponse<List<GetReflectionDto>>>> GetUserReflections([FromQuery] Guid? userId)
+    {
+      ServiceResponse<List<GetReflectionDto>> response = await _userService.GetUserReflections(userId);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.NotFound => NotFound(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns></returns>
+    [HttpGet("Questionnaires")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<ServiceResponse<List<GetQuestionnaireDto>>>> GetUserQuestionnaires([FromQuery] Guid? userId)
+    {
+      ServiceResponse<List<GetQuestionnaireDto>> response = await _userService.GetUserQuestionnaires(userId);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.NotFound => NotFound(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
       };
     }
   }

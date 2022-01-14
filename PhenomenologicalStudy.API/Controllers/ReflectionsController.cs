@@ -8,12 +8,13 @@ using PhenomenologicalStudy.API.Models.DataTransferObjects.ReflectionChild;
 using PhenomenologicalStudy.API.Services.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace PhenomenologicalStudy.API.Controllers
 {
   [Route("api/[controller]")]
-  [Authorize]
+  [Authorize(Roles = "Admin, Participant")]
   [ApiController]
   public class ReflectionsController : ControllerBase
   {
@@ -33,29 +34,47 @@ namespace PhenomenologicalStudy.API.Controllers
     [HttpDelete("{id}")]
     public async Task<ActionResult<ServiceResponse<Guid>>> DeleteReflection(Guid id)
     {
-      return Ok(await _reflectionService.DeleteReflection(id));
+      ServiceResponse<Guid> response = await _reflectionService.DeleteReflection(id);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.NotFound => NotFound(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
     }
 
     /// <summary>
     /// 
     /// </summary>
     /// <returns></returns>
-    [Authorize(Roles = "Participant")]
     [HttpGet]
-    public async Task<ActionResult<ServiceResponse<List<GetReflectionDto>>>> GetUserReflections()
+    public async Task<ActionResult<ServiceResponse<List<GetReflectionDto>>>> GetReflections()
     {
-      return Ok(await _reflectionService.GetUserReflections());
+      ServiceResponse<List<GetReflectionDto>> response = await _reflectionService.GetReflections();
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.Unauthorized => Unauthorized(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
     }
 
     /// <summary>
     /// 
     /// </summary>
     /// <returns></returns>
-    [Authorize(Roles = "Participant, Admin")]
     [HttpGet("Captures")]
     public async Task<ActionResult<ServiceResponse<List<GetCaptureDto>>>> GetReflectionCaptures()
     {
-      return Ok(await _reflectionService.GetReflectionCaptures());
+      ServiceResponse<List<GetCaptureDto>> response = await _reflectionService.GetReflectionCaptures();
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
     }
 
     /// <summary>
@@ -67,7 +86,15 @@ namespace PhenomenologicalStudy.API.Controllers
     [HttpPost("Children")]
     public async Task<ActionResult<ServiceResponse<Guid>>> PostReflectionChild(AddReflectionChildDto reflectionChild)
     {
-      return Ok(await _reflectionService.PostReflectionChild(reflectionChild));
+      ServiceResponse<Guid> response = await _reflectionService.PostReflectionChild(reflectionChild);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.NotFound => NotFound(response),
+        HttpStatusCode.Conflict => Conflict(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
     }
 
     /// <summary>
@@ -80,7 +107,14 @@ namespace PhenomenologicalStudy.API.Controllers
     [HttpDelete("{rid}/Children/{cid}")]
     public async Task<ActionResult<ServiceResponse<Guid>>> DeleteReflectionChild(Guid rid, Guid cid)
     {
-      return Ok(await _reflectionService.DeleteReflectionChild(rid, cid));
+      ServiceResponse<Guid> response = await _reflectionService.DeleteReflectionChild(rid, cid);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.NotFound => NotFound(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
     }
 
     /// <summary>
@@ -89,32 +123,48 @@ namespace PhenomenologicalStudy.API.Controllers
     /// <param name="reflectionChildEmotion"></param>
     /// <returns></returns>
     [Authorize(Roles = "Participant")]
-    [HttpPost("Children/Emotions")]
-    public async Task<ActionResult<ServiceResponse<Guid>>> PostReflectionChildEmotion(AddReflectionChildEmotionDto reflectionChildEmotion)
+    [HttpPost("{rid}/ChildEmotions")]
+    public async Task<ActionResult<ServiceResponse<Guid>>> PostReflectionChildEmotion(Guid rid, AddReflectionChildEmotionDto childEmotion)
     {
-      return Ok(await _reflectionService.PostReflectionChildEmotion(reflectionChildEmotion));
+      ServiceResponse<Guid> response = await _reflectionService.PostReflectionChildEmotion(rid, childEmotion);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.NotFound => NotFound(response),
+        HttpStatusCode.Conflict => Conflict(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
+    }
+
+    [Authorize(Roles = "Participant")]
+    [HttpDelete("{rid}/ChildEmotions")]
+    public async Task<ActionResult<ServiceResponse<Guid>>> DeleteReflectionChildEmotion(Guid rid, RemoveReflectionChildEmotionDto childEmotion)
+    {
+      ServiceResponse<Guid> response = await _reflectionService.DeleteReflectionChildEmotion(rid, childEmotion);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.NotFound => NotFound(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
     }
 
     /// <summary>
     /// 
     /// </summary>
     /// <returns></returns>
-    [Authorize(Roles = "Participant, Admin")]
-    [HttpGet("{id}/Capture")]
-    public async Task<ActionResult<ServiceResponse<GetCaptureDto>>> GetReflectionCaptureById(Guid id)
+    [HttpGet("{rid}/Capture")]
+    public async Task<ActionResult<ServiceResponse<GetCaptureDto>>> GetReflectionCaptureById(Guid rid)
     {
-      return Ok(await _reflectionService.GetReflectionCaptureById(id));
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns></returns>
-    [Authorize(Roles = "Admin")]
-    [HttpGet("All")]
-    public async Task<ActionResult<ServiceResponse<List<GetUserReflectionDto>>>> GetAllReflections()
-    {
-      return Ok(await _reflectionService.GetAllReflections());
+      ServiceResponse<GetCaptureDto> response = await _reflectionService.GetReflectionCaptureById(rid);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
     }
 
     /// <summary>
@@ -122,11 +172,17 @@ namespace PhenomenologicalStudy.API.Controllers
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    [Authorize(Roles = "Participant, Admin")]
     [HttpGet("{id}")]
     public async Task<ActionResult<ServiceResponse<GetReflectionDto>>> GetReflectionById(Guid id)
     {
-      return Ok(await _reflectionService.GetReflectionById(id));
+      ServiceResponse<GetReflectionDto> response = await _reflectionService.GetReflectionById(id);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.NotFound => NotFound(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
     }
 
     /// <summary>
@@ -136,9 +192,16 @@ namespace PhenomenologicalStudy.API.Controllers
     /// <returns></returns>
     [Authorize(Roles = "Participant")]
     [HttpPost]
-    public async Task<ActionResult<ServiceResponse<GetReflectionDto>>> PostReflection(AddReflectionStringDataDto reflection)
+    public async Task<ActionResult<ServiceResponse<Guid>>> PostReflection(AddReflectionStringDataDto reflection)
     {
-      return Ok(await _reflectionService.PostReflection(reflection));
+      ServiceResponse<Guid> response = await _reflectionService.PostReflection(reflection);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.Unauthorized => Unauthorized(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
     }
 
     /// <summary>
@@ -150,7 +213,14 @@ namespace PhenomenologicalStudy.API.Controllers
     [HttpPut("Comment")]
     public async Task<ActionResult<ServiceResponse<GetCommentDto>>> UpdateReflectionComment(UpdateReflectionCommentDto updatedComment)
     {
-      return Ok(await _reflectionService.UpdateReflectionComment(updatedComment));
+      ServiceResponse<GetCommentDto> response = await _reflectionService.UpdateReflectionComment(updatedComment);
+      return response.Status switch
+      {
+        HttpStatusCode.OK => Ok(response),
+        HttpStatusCode.NotFound => NotFound(response),
+        HttpStatusCode.InternalServerError => StatusCode((int)HttpStatusCode.InternalServerError, response),
+        _ => StatusCode((int)response.Status, (response))
+      };
     }
   }
 }

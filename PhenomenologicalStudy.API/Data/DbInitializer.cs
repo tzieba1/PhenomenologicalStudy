@@ -2,17 +2,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Security.Claims;
-using Microsoft.Extensions.Configuration;
 using PhenomenologicalStudy.API.Configuration;
 using PhenomenologicalStudy.API.Models;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.IO;
 using PhenomenologicalStudy.API.Models.ManyToMany;
-using ReflectionAPI.Models;
 
 namespace PhenomenologicalStudy.API.Data
 {
@@ -81,7 +78,6 @@ namespace PhenomenologicalStudy.API.Data
         EmailConfirmed = true
       };
       IdentityResult result = await userManager.CreateAsync(adminUser, Configuration.DemoAdminPassword);
-      //var result = await userManager.CreateAsync(adminUser, Configuration["DemoAdminPassword"]);
       if (!result.Succeeded)
         return 1;  // should log an error message here
 
@@ -114,7 +110,6 @@ namespace PhenomenologicalStudy.API.Data
       };
 
       result = await userManager.CreateAsync(participantUser, Configuration.DemoParticipantPassword);
-      //result = await userManager.CreateAsync(participantUser, Configuration["DemoParticipantPassword"]);
       if (!result.Succeeded)
         return 3;  // should log an error message here
 
@@ -143,7 +138,7 @@ namespace PhenomenologicalStudy.API.Data
       EntityEntry<Child> addedChild = await context.Children.AddAsync(child); // Add newly related child to the database
 
       // --- Create Reflection for demo participant
-      Reflection reflection = new() { User = createdParticipant, UpdatedTime = DateTimeOffset.UtcNow };
+      Reflection reflection = new() { User = createdParticipant };
       EntityEntry<Reflection> addedReflection = await context.Reflections.AddAsync(reflection);
 
       // --- Add Reflection to Child (FK -> Child.ReflectionId)
@@ -158,13 +153,16 @@ namespace PhenomenologicalStudy.API.Data
       await context.Captures.AddAsync(capture);
 
       // --- Create Comment for demo reflection
-      Comment comment = new() { Text = "Demo comment.", Reflection = reflection, UpdatedTime = DateTimeOffset.UtcNow };
+      Comment comment = new() { Text = "Demo comment.", Reflection = reflection };
       await context.Comments.AddAsync(comment);
 
       //ReflectionChild joinReflectionChild = await context.FindAsync(addedReflectionChild.Entity.Id);
       // --- Create Emotion list for demo child and demo reflection that will relate to a single ReflectionChild
       await context.Emotions.AddAsync(new Emotion() { Type = EmotionType.Overwhelmed, Intensity = 3, ReflectionChild = addedReflectionChild.Entity });
       await context.Emotions.AddAsync(new Emotion() { Type = EmotionType.Frustrated, Intensity = 6, ReflectionChild = addedReflectionChild.Entity });
+
+      // --- Create a Questionnaire and relate it to the participant
+      await context.Questionnaires.AddAsync(new PRFQuestionnaire() { User = createdParticipant });
 
       await context.SaveChangesAsync(); // Save database changes
 
